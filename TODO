@@ -1,0 +1,6 @@
+get & parse client IP list from server
+get game state from server - parse into client name and netID
+connect to client IP, port=31415+netID (client), port=31415-netID (shadow client)
+get game state from clients & server - save them 
+parse game state and compare it - output difference
+Tk UI controlling thingy
