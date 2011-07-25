@@ -3,6 +3,9 @@
 import xmlrpclib
 import SimpleXMLRPCServer
 
+def test():
+	print "test"
+
 def g_hm_get_client_ips():
 	print "g_hm_get_client_ips"
 	client_ips = "Console command: g_hm_get_client_ips\n"
@@ -11,9 +14,9 @@ def g_hm_get_client_ips():
 	client_ips += "Client:zorro2 IP:localhost\n"
 	return str(client_ips)
 
-server = SimpleXMLRPCServer.SimpleXMLRPCServer(("localhost", 31415))
+server = SimpleXMLRPCServer.SimpleXMLRPCServer(("localhost", 31415), logRequests=1)
 print "Hello I am a server"
-#server.register_function(g_hm_get_client_ips, "g_hm_get_client_ips")
 server.register_function(g_hm_get_client_ips)
+server.register_function(test)
 server.serve_forever()
 

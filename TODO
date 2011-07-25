@@ -1,6 +1,39 @@
+tk : HM TOOL : change the title based on status
+tk : HM TOOL : return in the command box
 get & parse client IP list from server
+
 get game state from server - parse into client name and netID
+
 connect to client IP, port=31415+netID (client), port=31415-netID (shadow client)
+
 get game state from clients & server - save them 
+
 parse game state and compare it - output difference
-Tk UI controlling thingy
+
+Get IP addresses from status command on server: check it is server
+
+Status:
+[CONSOLE] Executing console command 'status'
+-----------------------------------------
+Server Status:
+name: 
+ip: NOTPC1161
+version: 1.0.0.1
+level: pvp/dst_lighthouse
+gamerules: Seizure
+players: 1/16
+time remaining: 19:10
+ -----------------------------------------
+Connection Status:
+name: zorro  id: 1  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5
+
+Client:
+[CONSOLE] Executing console command 'status'
+-----------------------------------------
+Client Status:
+name: 
+ip: NOTPC1161
+version: 1.0.0.1
+name: zorro  entID:65532
+
+

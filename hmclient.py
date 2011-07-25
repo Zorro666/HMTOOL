@@ -1,38 +1,40 @@
 #! /usr/bin/python
 
-import xmlrpclib
+import xmlrpcclient
 import xml.dom.minidom
 import socket
 import sys
 
 def connectToServer(host, port):
-	hostAddress = "http://"
-	hostAddress += host
+	hostAddress = host
 	hostAddress += ":"
 	hostAddress += str(port)
 	ok = False
+	proxy = xmlrpcclient.XMLRPCClient()
 	try:
-		connect = xmlrpclib.Server(hostAddress)
+		proxy.connect(host, port)
 	except Exception:
 		print "Exception opening connection to address:", hostAddress
+		return [ok, proxy]
 
-	try:
-		connect.help()
-	except socket.error:
-		print "Failed to connect to address:", hostAddress
-	except xmlrpclib.Fault:
-		pass
-		ok = True
-		print "Connected to server:", hostAddress
-	else:
-		print "Generic failed to connect to address:", hostAddress
+	result = proxy.testConnection()
+	ok = result[0]
+	return [ok, proxy]
 
-	return [ok, connect]
+def sendConsoleCommand(serverConnection, command, params=""):
+	xml_result = serverConnection.sendConsoleCommand(command, params)
+	return xml_result
 
 def getClientIps(serverConnection):
 	clientInfos = []
 	print "Sending g_hm_get_client_ips"
-	result = serverConnection.g_hm_get_client_ips()
+	xml_result = sendConsoleCommand(serverConnection, "g_hm_get_client_ips")
+	success = xml_result[0]
+	if success == False:
+		print "Error during g_hm_get_client_ips"
+		return False
+
+	result = xml_result[1]
 	foundStart=0
 	for l in result.splitlines():
 		if (foundStart == 1):
@@ -48,28 +50,21 @@ def getClientIps(serverConnection):
 	for ci in clientInfos:
 		print "Client:", ci[0], "IP:", ci[1]
 
-def testServerError():
-	result = connectToServer("localhost", 31416)
-	serverOK = result[0]
-	if (serverOK == False):
-		print "OH NOES", str(31416)
-		sys.exit(-1)
-	else:
-		serverConnection = result[1]
-		print "Connected to server"
+	return True
+
+def dumpGameState(proxy):
+	return proxy.runConsoleCommand("g_hm_dump_game_state")
 
 def runTest():
-	if 0:
-		testServerError()
-
 	result = connectToServer("localhost", 31415)
 	serverOK = result[0]
 	if (serverOK == False):
-		print "OH NOES:", str(31415)
+		print "Can't connect to server:", "localhost", str(31415)
 		sys.exit(-1)
 	else:
 		serverConnection = result[1]
 
+	serverConnection.runConsoleCommand("test")
 	getClientIps(serverConnection)
 
 if __name__ == '__main__':
