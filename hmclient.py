@@ -58,17 +58,20 @@ def testServerError():
 		serverConnection = result[1]
 		print "Connected to server"
 
-if 0:
-	testServerError()
+def runTest():
+	if 0:
+		testServerError()
 
-result = connectToServer("localhost", 31415)
-serverOK = result[0]
-if (serverOK == False):
-	print "OH NOES:", str(31415)
-	sys.exit(-1)
-else:
-	serverConnection = result[1]
+	result = connectToServer("localhost", 31415)
+	serverOK = result[0]
+	if (serverOK == False):
+		print "OH NOES:", str(31415)
+		sys.exit(-1)
+	else:
+		serverConnection = result[1]
 
-getClientIps(serverConnection)
+	getClientIps(serverConnection)
 
+if __name__ == '__main__':
+	runTest()
 
