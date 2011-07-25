@@ -1,5 +1,3 @@
-tk : HM TOOL : change the title based on status
-tk : HM TOOL : return in the command box
 get & parse client IP list from server
 
 get game state from server - parse into client name and netID

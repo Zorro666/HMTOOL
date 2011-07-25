@@ -25,31 +25,28 @@ def sendConsoleCommand(serverConnection, command, params=""):
 	xml_result = serverConnection.sendConsoleCommand(command, params)
 	return xml_result
 
-def getClientIps(serverConnection):
-	clientInfos = []
-	print "Sending g_hm_get_client_ips"
-	xml_result = sendConsoleCommand(serverConnection, "g_hm_get_client_ips")
+def getClientIPs(serverConnection):
+	xml_result = sendConsoleCommand(serverConnection, "status")
 	success = xml_result[0]
 	if success == False:
-		print "Error during g_hm_get_client_ips"
+		print "Error during status"
 		return False
-
 	result = xml_result[1]
-	foundStart=0
+	foundStart = 0
 	for l in result.splitlines():
 		if (foundStart == 1):
-			data = l.split()
-			client = data[0].split(":")[1]
-			ip = data[1].split(":")[1]
-			clientInfo = [client, ip]
-			clientInfos.append(clientInfo)
-		if (l == "CLIENT_IPS"):
-			foundStart=1
+			if l != "":
+				data = l.split()
+				client = data[1]
+				ip = data[5]
+				clientInfo = [client, ip]
+				clientInfos.append(clientInfo)
+		if l == "Connection Status:":
+			foundStart = 1
 			clientInfos = []
 
 	for ci in clientInfos:
 		print "Client:", ci[0], "IP:", ci[1]
-
 	return True
 
 def dumpGameState(proxy):

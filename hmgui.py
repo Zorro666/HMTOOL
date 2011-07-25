@@ -4,6 +4,10 @@ import Tkinter
 import hmclient
 
 class HMGUI(Tkinter.Frame):
+	def setTitle(self, title):
+		fullTitle = self.appTitle + ":" + title
+		self.master.title(fullTitle)
+
 	def consolePrint(self, output):
 		self.TEXT_console.insert(Tkinter.END,"Server:")
 		self.TEXT_console.insert(Tkinter.END,self.serverStr)
@@ -18,7 +22,7 @@ class HMGUI(Tkinter.Frame):
 		self.serverStr=serverName+":"+serverPort
 		result = hmclient.connectToServer(serverName, serverPort)
 		self.serverOK = result[0]
-		if (self.serverOK == False):
+		if self.serverOK == False:
 			self.consolePrint("ERROR failed to connect to server")
 		else:
 			self.serverConnection = result[1]
@@ -27,15 +31,30 @@ class HMGUI(Tkinter.Frame):
 			self.BUTTON_connectServer["text"] = "Connected to:"+self.serverStr
 			self.BUTTON_connectServer["command"] = self.connectServer
 			self.consolePrint("Connected to server")
+			self.setTitle("Connected to "+self.serverStr)
 
 	def sendCommand(self):
+		if self.serverOK == False:
+			self.consolePrint("ERROR: server not connected")
+			return
+
 		command = self.ENTRY_command.get()
+		if command == "":
+			self.consolePrint("ERROR: NULL command")
+			return
+
 		xml_result = hmclient.sendConsoleCommand(self.serverConnection, command)
 		success = xml_result[0]
 		result = xml_result[1]
 		self.consolePrint("Sent Command:"+command)
 		self.consolePrint("Command Result:"+str(success))
 		self.consolePrint(result)
+
+	def getClientIPs(self):
+		hmclient.getClientIPs(self.serverConnection)
+
+	def returnKey(self, event):
+		self.sendCommand()
 
 	def createWidgets(self):
 		curRow=0
@@ -74,6 +93,7 @@ class HMGUI(Tkinter.Frame):
 		self.ENTRY_command["width"] = 60
 		self.ENTRY_command.insert(0, "")
 		self.ENTRY_command.grid(row=curRow, column=curCol, columnspan=3)
+		self.ENTRY_command.bind('<Return>', self.returnKey)
 		curCol+=3
 		self.BUTTON_quit = Tkinter.Button(self)
 		self.BUTTON_quit["text"] = "Send Command"
@@ -84,7 +104,7 @@ class HMGUI(Tkinter.Frame):
 		curRow+=1
 		curCol=0
 		self.TEXT_console = Tkinter.Text(self)
-		self.TEXT_console.grid(row=curRow, columnspan=5)
+		self.TEXT_console.grid(row=curRow, columnspan=10)
 		curCol+=1
 
 		curRow+=1
@@ -95,6 +115,11 @@ class HMGUI(Tkinter.Frame):
 		self.BUTTON_quit["command"] = self.quit
 		self.BUTTON_quit.grid(row=curRow, column=curCol)
 		curCol+=1
+		self.BUTTON_getIPs = Tkinter.Button(self)
+		self.BUTTON_getIPs["text"] = "Get Client IPs"
+		self.BUTTON_getIPs["command"] = self.getClientIPs
+		self.BUTTON_getIPs.grid(row=curRow, column=curCol)
+		curCol+=1
 
 		curRow+=1
 		curCol=0
@@ -104,10 +129,11 @@ class HMGUI(Tkinter.Frame):
 		self.grid()
 		self.createWidgets()
 		self.serverOK=False
+		self.appTitle="HM Tool"
+		self.serverStr=""
 
 root = Tkinter.Tk()
 app = HMGUI(master=root)
-app.master.title("HM Tool")
-#app.master.maxsize(400, 300)
+app.setTitle("Disconnected")
 app.mainloop()
 root.destroy()
