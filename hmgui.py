@@ -10,20 +10,40 @@ class HMGUI(Tkinter.Frame):
 		self.createWidgets()
 		self.appTitle = "HM Tool"
 		self.connections = []
-		self.activeConnection = None
+		self.currentConnection = None
 
 	def setTitle(self, title):
 		fullTitle = self.appTitle + ":" + title
 		self.master.title(fullTitle)
 
-	def consolePrint(self, output):
-		if self.activeConnection != None:
-			self.TEXT_console.insert(Tkinter.END,"Server:")
-			self.TEXT_console.insert(Tkinter.END,self.activeConnection.string)
-			self.TEXT_console.insert(Tkinter.END," ")
+	def consolePrint(self, output, noprefix=False):
+		self.TEXT_console.config(state = Tkinter.NORMAL)
+		if self.currentConnection != None:
+			if noprefix == False:
+				self.TEXT_console.insert(Tkinter.END,"Server:")
+				self.TEXT_console.insert(Tkinter.END,self.currentConnection.string)
+				self.TEXT_console.insert(Tkinter.END," ")
 		self.TEXT_console.insert(Tkinter.END,output)
 		self.TEXT_console.insert(Tkinter.END,"\n")
 		self.TEXT_console.see(Tkinter.END)
+		self.TEXT_console.config(state = Tkinter.DISABLED)
+
+	def setServerEntry(self, serverName):
+		self.TEXT_server.config(state = Tkinter.NORMAL)
+		self.TEXT_server.delete(1.0, Tkinter.END)
+		self.TEXT_server.insert(Tkinter.END, serverName)
+		self.TEXT_server.config(state = Tkinter.DISABLED)
+
+	def clearClients(self):
+		self.TEXT_clients.config(state = Tkinter.NORMAL)
+		self.TEXT_clients.delete(1.0, Tkinter.END)
+		self.TEXT_clients.config(state = Tkinter.DISABLED)
+
+	def addClientEntry(self, clientName):
+		self.TEXT_clients.config(state = Tkinter.NORMAL)
+		self.TEXT_clients.insert(Tkinter.END, clientName)
+		self.TEXT_clients.insert(Tkinter.END, "\n")
+		self.TEXT_clients.config(state = Tkinter.DISABLED)
 
 	def connectServer(self):
 		serverName = self.ENTRY_serverIP.get()
@@ -38,8 +58,11 @@ class HMGUI(Tkinter.Frame):
 			self.currentConnection = connection
 			self.BUTTON_connectServer["text"] = "Connected to:"+self.currentConnection.string
 			self.BUTTON_connectServer["command"] = self.connectServer
+			self.consolePrint("START #####################################################", noprefix=True)
 			self.consolePrint("Connected to server")
 			self.setTitle("Connected to "+self.currentConnection.string)
+			self.consolePrint("END #####################################################", noprefix=True)
+			self.setServerEntry(serverName)
 
 	def sendCommand(self):
 		if self.currentConnection.valid == False:
@@ -54,17 +77,25 @@ class HMGUI(Tkinter.Frame):
 		xml_result = self.currentConnection.sendConsoleCommand(command)
 		success = xml_result[0]
 		result = xml_result[1]
+		self.consolePrint("START #####################################################", noprefix=True)
 		self.consolePrint("Sent Command:"+command)
 		self.consolePrint("Command Result:"+str(success))
 		self.consolePrint(result)
+		self.consolePrint("END #####################################################", noprefix=True)
 
 	def getClientIPs(self):
 		xml_result = self.currentConnection.getClientIPs()
 		success = xml_result[0]
 		result = xml_result[1]
+		self.consolePrint("START #####################################################", noprefix=True)
 		self.consolePrint("GetClientIPs")
 		self.consolePrint("Result:"+str(success))
 		self.consolePrint(result)
+		self.consolePrint("END #####################################################", noprefix=True)
+		self.clearClients()
+		for ci in result:
+			clientName = ci[0]
+			self.addClientEntry(clientName)
 
 	def returnKey(self, event):
 		self.sendCommand()
@@ -107,12 +138,31 @@ class HMGUI(Tkinter.Frame):
 		curCol += 1
 
 		curRow += 1
+		textSavedRow = curRow
+		serverClientBoxWidth = 20
 		curCol = 0
-		self.TEXT_console = Tkinter.Text(self)
-		self.TEXT_console.grid(row = curRow, columnspan = 10)
+		self.LABEL_server = Tkinter.Label(self, text = "Server")
+		self.LABEL_server.grid(row = curRow, column = curCol)
+		curRow += 1
+		curCol = 0
+		self.TEXT_server = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientBoxWidth, height = 1)
+		self.TEXT_server.grid(row = curRow, column = curCol)
+		curRow += 1
+		curCol = 0
+		self.LABEL_clients = Tkinter.Label(self, text = "Clients")
+		self.LABEL_clients.grid(row = curRow, column = curCol)
+		curRow += 1
+		curCol = 0
+		self.TEXT_clients = Tkinter.Text(self, state = Tkinter.DISABLED, width =  serverClientBoxWidth, height = 16)
+		self.TEXT_clients.grid(row = curRow, column = curCol, rowspan=16)
+
+		curRow = textSavedRow
+		curCol += 1
+		self.TEXT_console = Tkinter.Text(self, state = Tkinter.DISABLED)
+		self.TEXT_console.grid(row = curRow, column = curCol, rowspan=21, columnspan = 10)
 		curCol += 1
 
-		curRow += 1
+		curRow += 21
 		curCol = 0
 		self.BUTTON_quit = Tkinter.Button(self, text = "QUIT", fg = "red", command = self.quit)
 		self.BUTTON_quit.grid(row = curRow, column = curCol)

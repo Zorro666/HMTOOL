@@ -96,7 +96,7 @@ class Connection():
 			print infoStr
 			info += infoStr
 			info += "\n"
-		return [True, info]
+		return [True, clientInfos]
 
 def dumpGameState(proxy):
 	return proxy.runConsoleCommand("g_hm_dump_game_state")
