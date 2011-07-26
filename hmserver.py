@@ -22,6 +22,8 @@ def status():
 	statusResult += " -----------------------------------------" + "\n"
 	statusResult += "Connection Status:" + "\n"
 	statusResult += "name: zorro  id: 1  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+	statusResult += "name: zorro2 id: 2  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+	statusResult += "name: zorro3 id: 2  ip: [10.16.5.162]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
 	return str(statusResult)
 
 def g_hm_get_client_ips():
@@ -32,7 +34,7 @@ def g_hm_get_client_ips():
 	client_ips += "Client:zorro2 IP:localhost\n"
 	return str(client_ips)
 
-server = SimpleXMLRPCServer.SimpleXMLRPCServer(("localhost", 31415), logRequests=1)
+server = SimpleXMLRPCServer.SimpleXMLRPCServer(("localhost", 31415), logRequests = 1)
 print "Hello I am a server"
 server.register_function(g_hm_get_client_ips)
 server.register_function(test)

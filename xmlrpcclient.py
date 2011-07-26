@@ -37,17 +37,20 @@ def xml_char_data(data):
 		print 'Character data:', repr(data)
 
 class XMLRPCClient():
-	def connect(self, host, port):
-		self.proxy = httplib.HTTPConnection(host, port);
+	def __init__(self, host, port):
 		global serverDebug
-		self.proxy.set_debuglevel(serverDebug)
 		self.serverDebug = serverDebug
-
 		self.serverAddress = host
 		self.serverAddress += ":"
 		self.serverAddress += str(port)
+		self.host = host
+		self.port = port
 
-	def xmlrpc(self, function, params=""):
+	def connect(self):
+		self.proxy = httplib.HTTPConnection(self.host, self.port);
+		self.proxy.set_debuglevel(self.serverDebug)
+
+	def xmlrpc(self, function, params = ""):
 		postBody = "<?xml version='1.0'?>\n"
 		postBody += "<methodCall>\n"
 		postBody += "<methodName>"
@@ -160,7 +163,7 @@ class XMLRPCClient():
 	def testConnection(self):
 		return self.sendConsoleCommand("r_width")
 
-	def sendConsoleCommand(self, command, params=""):
+	def sendConsoleCommand(self, command, params = ""):
 		rpcCommand = "'"
 		rpcCommand += command
 		if params != "":
