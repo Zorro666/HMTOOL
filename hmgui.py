@@ -11,6 +11,7 @@ class HMGUI(Tkinter.Frame):
 		self.appTitle = "HM Tool"
 		self.connections = []
 		self.currentConnection = None
+		self.master.bind('<Escape>', self.userQuit)
 
 	def setTitle(self, title):
 		fullTitle = self.appTitle + ":" + title
@@ -20,7 +21,7 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_console.config(state = Tkinter.NORMAL)
 		if self.currentConnection != None:
 			if noprefix == False:
-				self.TEXT_console.insert(Tkinter.END,"Server:")
+				self.TEXT_console.insert(Tkinter.END,"HTTP Server:")
 				self.TEXT_console.insert(Tkinter.END,self.currentConnection.string)
 				self.TEXT_console.insert(Tkinter.END," ")
 		self.TEXT_console.insert(Tkinter.END,output)
@@ -45,31 +46,37 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_clients.insert(Tkinter.END, "\n")
 		self.TEXT_clients.config(state = Tkinter.DISABLED)
 
-	def connectServer(self):
-		serverName = self.ENTRY_serverIP.get()
-		serverPort = self.ENTRY_serverPort.get()
+	def connectHTTPServer(self):
+		HTTPServerName = self.ENTRY_HTTPServerIP.get()
+		HTTPServerPort = self.ENTRY_HTTPServerPort.get()
 		connection = hmclient.Connection()
-		result = connection.connectToServer(serverName, serverPort)
+		result = connection.connectToHTTPServer(HTTPServerName, HTTPServerPort)
 
 		if result == False:
-			self.consolePrint("ERROR failed to connect to server")
+			self.consolePrint("ERROR failed to connect to HTTP server")
 		else:
 			self.connections.append(connection)
 			self.currentConnection = connection
-			self.BUTTON_connectServer["text"] = "Connected to:"+self.currentConnection.string
-			self.BUTTON_connectServer["command"] = self.connectServer
-			self.consolePrint("START #####################################################", noprefix=True)
-			self.consolePrint("Connected to server")
-			self.setTitle("Connected to "+self.currentConnection.string)
-			self.consolePrint("END #####################################################", noprefix=True)
-			self.setServerEntry(serverName)
+			self.BUTTON_connectHTTPServer["text"] = "Connected to:" + self.currentConnection.string
+			self.BUTTON_connectHTTPServer["command"] = self.connectHTTPServer
+			self.consolePrint("START #####################################################", noprefix = True)
+			self.consolePrint("Connected to HTTPServer")
+			self.setTitle("Connected to " + self.currentConnection.string)
+			self.consolePrint("END #####################################################", noprefix = True)
+			if self.currentConnection.isServer():
+				self.setServerEntry(HTTPServerName)
+			if self.currentConnection.isClient():
+				self.addClientEntry(HTTPServerName)
 
 	def sendCommand(self):
-		if self.currentConnection.valid == False:
-			self.consolePrint("ERROR: server not connected")
+		command = self.ENTRY_command.get()
+		if self.testConnection(command) == False:
 			return
 
-		command = self.ENTRY_command.get()
+		if self.currentConnection.valid == False:
+			self.consolePrint("ERROR: HTTP server not connected")
+			return
+
 		if command == "":
 			self.consolePrint("ERROR: NULL command")
 			return
@@ -84,6 +91,9 @@ class HMGUI(Tkinter.Frame):
 		self.consolePrint("END #####################################################", noprefix=True)
 
 	def getClientIPs(self):
+		if self.testConnection("GetClientIPs") == False:
+			return
+
 		xml_result = self.currentConnection.getClientIPs()
 		success = xml_result[0]
 		result = xml_result[1]
@@ -97,30 +107,79 @@ class HMGUI(Tkinter.Frame):
 			clientName = ci[0]
 			self.addClientEntry(clientName)
 
+	def testConnection(self, info):
+		valid = True
+		if self.currentConnection == None:
+			valid = False
+		else:
+			if self.currentConnection.valid == False:
+				valid = False
+
+		if valid == False:
+			self.consolePrint("START #####################################################", noprefix=True)
+			self.consolePrint(info)
+			self.consolePrint("ERROR: HTTP server not connected")
+			self.consolePrint("END #####################################################", noprefix=True)
+			return False
+
+		return True
+
+
+	def getGameState(self):
+		if self.testConnection("GetGameState") == False:
+			return
+
+		xml_result = self.currentConnection.getGameState()
+		success = xml_result[0]
+		result = xml_result[1]
+		self.consolePrint("START #####################################################", noprefix=True)
+		self.consolePrint("GetGameState")
+		self.consolePrint("Result:"+str(success))
+		self.consolePrint(result)
+		self.consolePrint("END #####################################################", noprefix=True)
+
+	def getClientList(self):
+		if self.testConnection("GetClientList") == False:
+			return
+
+		xml_result = self.currentConnection.getClientList()
+		success = xml_result[0]
+		result = xml_result[1]
+		self.consolePrint("START #####################################################", noprefix=True)
+		self.consolePrint("GetClientList")
+		self.consolePrint("Result:"+str(success))
+		self.consolePrint(result)
+		for ci in result:
+			self.consolePrint("Name:"+ci[0]+" NetID:"+ci[1])
+		self.consolePrint("END #####################################################", noprefix=True)
+
 	def returnKey(self, event):
 		self.sendCommand()
+
+	def userQuit(self, event):
+		self.quit()
 
 	def createWidgets(self):
 		curRow = 0
 		curCol = 0
-		self.LABEL_serverIP = Tkinter.Label(self, text = "Server IP")
-		self.LABEL_serverIP.grid(row = curRow, column = curCol)
+		self.LABEL_HTTPServerIP = Tkinter.Label(self, text = "HTTP Server IP")
+		self.LABEL_HTTPServerIP.grid(row = curRow, column = curCol)
 		curCol += 1
-		self.ENTRY_serverIP = Tkinter.Entry(self)
-		self.ENTRY_serverIP.insert(0, "localhost")
-		self.ENTRY_serverIP.grid(row = curRow, column = curCol)
-		curCol += 1
-
-		self.LABEL_serverPort = Tkinter.Label(self, text = "Server Port")
-		self.LABEL_serverPort.grid(row = curRow, column = curCol)
-		curCol += 1
-		self.ENTRY_serverPort = Tkinter.Entry(self)
-		self.ENTRY_serverPort.insert(0, "31415")
-		self.ENTRY_serverPort.grid(row = curRow, column = curCol)
+		self.ENTRY_HTTPServerIP = Tkinter.Entry(self)
+		self.ENTRY_HTTPServerIP.insert(0, "localhost")
+		self.ENTRY_HTTPServerIP.grid(row = curRow, column = curCol)
 		curCol += 1
 
-		self.BUTTON_connectServer = Tkinter.Button(self, text = "Connect Server", command = self.connectServer)
-		self.BUTTON_connectServer.grid(row = curRow, column = curCol)
+		self.LABEL_HTTPServerPort = Tkinter.Label(self, text = "HTTP Server Port")
+		self.LABEL_HTTPServerPort.grid(row = curRow, column = curCol)
+		curCol += 1
+		self.ENTRY_HTTPServerPort = Tkinter.Entry(self)
+		self.ENTRY_HTTPServerPort.insert(0, "31415")
+		self.ENTRY_HTTPServerPort.grid(row = curRow, column = curCol)
+		curCol += 1
+
+		self.BUTTON_connectHTTPServer = Tkinter.Button(self, text = "Connect HTTP Server", command = self.connectHTTPServer)
+		self.BUTTON_connectHTTPServer.grid(row = curRow, column = curCol)
 		curCol += 1
 
 		curRow += 1
@@ -169,6 +228,12 @@ class HMGUI(Tkinter.Frame):
 		curCol += 1
 		self.BUTTON_getIPs = Tkinter.Button(self, text = "Get Client IPs", command = self.getClientIPs)
 		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
+		curCol += 1
+		self.BUTTON_getGameState = Tkinter.Button(self, text = "Get Game State", command = self.getGameState)
+		self.BUTTON_getGameState.grid(row = curRow, column = curCol)
+		curCol += 1
+		self.BUTTON_getClientList = Tkinter.Button(self, text = "Get Client List", command = self.getClientList)
+		self.BUTTON_getClientList.grid(row = curRow, column = curCol)
 		curCol += 1
 
 		curRow += 1

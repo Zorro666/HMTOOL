@@ -1,14 +1,11 @@
-get & parse client IP list from server
+hmclient: connect to client IP, port = serverPort + netID (client), port = serverPort - netID (shadow client)
 
-get game state from server - parse into client name and netID
+hmclient: get hm game state from clients & server - save them 
 
-connect to client IP, port=31415+netID (client), port=31415-netID (shadow client)
+hmclient: parse hm game state and compare it - output difference
 
-get game state from clients & server - save them 
-
-parse game state and compare it - output difference
-
-Get IP addresses from status command on server: check it is server
+hmgui: get & parse client IP list from server
+hmgui: get & parse client name, netID from server into list
 
 Status:
 [CONSOLE] Executing console command 'status'

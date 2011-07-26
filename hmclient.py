@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 import xmlrpcclient
-import xml.dom.minidom
+import xml.etree.ElementTree
 import socket
 import sys
 
@@ -13,7 +13,7 @@ class Connection():
 		self.port = ""
 		self.connection = xmlrpcclient.XMLRPCClient(self.host, self.port)
 
-	def connectToServer(self, host, port):
+	def connectToHTTPServer(self, host, port):
 		hostAddress = host
 		hostAddress += ":"
 		hostAddress += str(port)
@@ -43,9 +43,10 @@ class Connection():
 		success = xml_result[0]
 		if success == False:
 			print "Error during status"
-			return False
+			return [False, ""]
 		result = xml_result[1]
 		foundStart = 0
+		clientInfos = []
 		for l in result.splitlines():
 			if (foundStart == 1):
 				parsedOK = True
@@ -98,12 +99,67 @@ class Connection():
 			info += "\n"
 		return [True, clientInfos]
 
-def dumpGameState(proxy):
-	return proxy.runConsoleCommand("g_hm_dump_game_state")
+	def getClientList(self):
+		result = self.getGameState()
+		if result[0] == False:
+			print "Error during getGameState"
+			return [False, ""]
+
+		clientList = []
+		gameStateXML = xml.etree.ElementTree.XML(result[1])
+		if gameStateXML.tag != "HM_GameState":
+			print "ERROR"+gameStateXML.tag
+			return [False, clientList]
+		for node in gameStateXML:
+			if node.tag == "net_actors":
+				print "Found net_actors"
+				for netActor in node:
+					netID = netActor.get("NI")
+					name = netActor.get("N")
+					ci = [name, netID]
+					clientList.append(ci)
+
+		for ci in clientList:
+			print "Name:", ci[0], " NetID:",ci[1]
+
+		return [True, clientList]
+
+	def getGameState(self):
+		xml_result = self.sendConsoleCommand("g_hm_dump_game_state")
+		success = xml_result[0]
+		if success == False:
+			print "Error during g_hm_dump_game_state"
+			return [False, ""]
+		result = xml_result[1]
+		return [True, result]
+
+	def isServer(self):
+		xml_result = self.sendConsoleCommand("status")
+		success = xml_result[0]
+		if success == False:
+			print "Error during status"
+			return False
+		result = xml_result[1]
+		for l in result.splitlines():
+				if l == "Server Status:":
+					return True;
+		return False
+
+	def isClient(self):
+		xml_result = self.sendConsoleCommand("status")
+		success = xml_result[0]
+		if success == False:
+			print "Error during status"
+			return False
+		result = xml_result[1]
+		for l in result.splitlines():
+				if l == "Client Status:":
+					return True;
+		return False
 
 def runTest():
 	connection = Connection()
-	result = connection.connectToServer("localhost", 31415)
+	result = connection.connectToHTTPServer("localhost", 31415)
 	if (connection.valid == False):
 		print "Can't connect to server:", "localhost", str(31415)
 		sys.exit(-1)
