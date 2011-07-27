@@ -100,7 +100,7 @@ class HMGUI(Tkinter.Frame):
 	def getClientDetails(self):
 		if self.testConnection("GetClientDetails") == False:
 			return
-		xml_result = self.currentConnection.getClientDetailsList()
+		xml_result = self.currentConnection.getClientDetailsList(forceUpdate=True)
 		success = xml_result[0]
 		result = xml_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
