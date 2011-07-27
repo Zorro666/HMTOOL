@@ -36,16 +36,16 @@ class Connection():
 		return ok
 
 	def sendConsoleCommand(self, command, params = ""):
-		xml_result = self.connection.sendConsoleCommand(command, params)
-		return xml_result
+		rpc_result = self.connection.sendConsoleCommand(command, params)
+		return rpc_result
 
 	def getClientIPs(self):
-		xml_result = self.sendConsoleCommand("status")
-		success = xml_result[0]
+		rpc_result = self.sendConsoleCommand("status")
+		success = rpc_result[0]
 		if success == False:
 			print "Error during status"
 			return [False, ""]
-		result = xml_result[1]
+		result = rpc_result[1]
 		foundStart = 0
 		clientInfos = []
 		for l in result.splitlines():
@@ -108,6 +108,27 @@ class Connection():
 			info += "\n"
 		return [True, clientInfos]
 
+	def getServerIP(self):
+		rpc_result = self.sendConsoleCommand("status")
+		success = rpc_result[0]
+		if success == False:
+			print "Error during status"
+			return [False, ""]
+		result = rpc_result[1]
+		foundServer = 0
+		serverIP = ""
+		for l in result.splitlines():
+				if l == "Server Status:":
+					foundServer = 1
+				if foundServer == 1:
+					ipStart = l.find("ip:")
+					if ipStart == 0:
+						ipInfo = l[ipStart+len("ip:"):]
+						ipInfo = ipInfo.strip()
+						serverIP = ipInfo
+							
+		return [True, serverIP]
+
 	def getClientList(self):
 		result = self.getGameState()
 		if result[0] == False:
@@ -115,6 +136,7 @@ class Connection():
 			return [False, ""]
 
 		clientList = []
+
 		gameStateXML = xml.etree.ElementTree.XML(result[1])
 		if gameStateXML.tag != "HM_GameState":
 			print "ERROR"+gameStateXML.tag
@@ -165,33 +187,40 @@ class Connection():
 		return [True, self.clientDetails]
 
 	def getGameState(self):
-		xml_result = self.sendConsoleCommand("g_hm_dump_game_state")
-		success = xml_result[0]
+		rpc_result = self.sendConsoleCommand("g_hm_dump_gamestate")
+		success = rpc_result[0]
 		if success == False:
-			print "Error during g_hm_dump_game_state"
+			print "Error during g_hm_dump_gamestate"
 			return [False, ""]
-		result = xml_result[1]
-		return [True, result]
+		result = rpc_result[1]
+
+		xml_start = result.find("<HM_GameState")
+		xml_end = result.find("</HM_GameState")
+		print "xml_start=", xml_start
+		print "xml_end=", xml_end
+		xml_data = result[xml_start:xml_end+len("</HM_GameState>")]
+
+		return [True, xml_data]
 
 	def isServer(self):
-		xml_result = self.sendConsoleCommand("status")
-		success = xml_result[0]
+		rpc_result = self.sendConsoleCommand("status")
+		success = rpc_result[0]
 		if success == False:
 			print "Error during status"
 			return False
-		result = xml_result[1]
+		result = rpc_result[1]
 		for l in result.splitlines():
 				if l == "Server Status:":
 					return True;
 		return False
 
 	def isClient(self):
-		xml_result = self.sendConsoleCommand("status")
-		success = xml_result[0]
+		rpc_result = self.sendConsoleCommand("status")
+		success = rpc_result[0]
 		if success == False:
 			print "Error during status"
 			return False
-		result = xml_result[1]
+		result = rpc_result[1]
 		for l in result.splitlines():
 				if l == "Client Status:":
 					return True;
