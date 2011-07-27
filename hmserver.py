@@ -3,6 +3,8 @@
 import sys
 import xmlrpclib
 import SimpleXMLRPCServer
+import shlex
+import subprocess
 
 debug = 0
 gameServer = 1
@@ -38,7 +40,7 @@ port = int(portStr)
 print "port=",str(port)
 
 def status():
-	print "status"
+	print serverName+"status"
 	if gameServer:
 		statusResult = "Status:" + "\n"
 		statusResult += "[CONSOLE] Executing console command 'status'" + "\n"
@@ -70,7 +72,7 @@ def status():
 	return str(statusResult)
 
 def g_hm_dump_gamestate():
-	print "g_hm_dump_gamestate"
+	print serverName+"g_hm_dump_gamestate"
 	if gameServer:
 		fileName = "Server__NOTPC1161.xml"
 	if gameClient:
@@ -85,16 +87,36 @@ def g_hm_dump_gamestate():
 
 	return gameState
 
+def jake(params):
+	print serverName+"jake", params
+	if gameClient:
+		return "ERROR: client can't spawn servers"
+
+	netIDs = params.split()
+	resultStr = ""
+	for netID in netIDs:
+		clientPort = str(int(port) + int(netID))
+		cmdline = "hmserver.py -client -port=" + clientPort
+		print serverName+cmdline
+		args = shlex.split(cmdline)
+		p = subprocess.Popen(args)
+		resultStr += "NetID " + netID + " client "+ clientPort
+
+	return resultStr
+
 server = SimpleXMLRPCServer.SimpleXMLRPCServer((host, port), logRequests = debug)
-print ""
-print "Hello I am a HTTP server running on "+host+":"+str(port)
+serverName = host+":"+str(port)+":"
+
+print serverName+""
+print serverName+"Hello I am a HTTP server running on "+host+":"+str(port)
 if gameServer:
-	print "Acting as a fake game server"
+	print serverName+"Acting as a fake game server"
 if gameClient:
-	print "Acting as a fake game client"
-print ""
+	print serverName+"Acting as a fake game client"
+print serverName+""
 
 server.register_function(g_hm_dump_gamestate)
 server.register_function(status)
+server.register_function(jake)
 server.serve_forever()
 
