@@ -29,11 +29,17 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_console.see(Tkinter.END)
 		self.TEXT_console.config(state = Tkinter.DISABLED)
 
-	def setServerEntry(self, serverName):
+	def setServerName(self, serverName):
 		self.TEXT_serverName.config(state = Tkinter.NORMAL)
 		self.TEXT_serverName.delete(1.0, Tkinter.END)
 		self.TEXT_serverName.insert(Tkinter.END, serverName)
 		self.TEXT_serverName.config(state = Tkinter.DISABLED)
+
+	def setServerIP(self, serverIP):
+		self.TEXT_serverIP.config(state = Tkinter.NORMAL)
+		self.TEXT_serverIP.delete(1.0, Tkinter.END)
+		self.TEXT_serverIP.insert(Tkinter.END, serverIP)
+		self.TEXT_serverIP.config(state = Tkinter.DISABLED)
 
 	def clearClients(self):
 		self.TEXT_clientNames.config(state = Tkinter.NORMAL)
@@ -42,6 +48,12 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_clientIPs.config(state = Tkinter.NORMAL)
 		self.TEXT_clientIPs.delete(1.0, Tkinter.END)
 		self.TEXT_clientIPs.config(state = Tkinter.DISABLED)
+		self.TEXT_clientNetIDs.config(state = Tkinter.NORMAL)
+		self.TEXT_clientNetIDs.delete(1.0, Tkinter.END)
+		self.TEXT_clientNetIDs.config(state = Tkinter.DISABLED)
+		self.TEXT_clientPorts.config(state = Tkinter.NORMAL)
+		self.TEXT_clientPorts.delete(1.0, Tkinter.END)
+		self.TEXT_clientPorts.config(state = Tkinter.DISABLED)
 
 	def addClientEntry(self, clientDetail):
 		self.TEXT_clientNames.config(state = Tkinter.NORMAL)
@@ -52,12 +64,21 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_clientIPs.insert(Tkinter.END, clientDetail[1])
 		self.TEXT_clientIPs.insert(Tkinter.END, "\n")
 		self.TEXT_clientIPs.config(state = Tkinter.DISABLED)
+		self.TEXT_clientNetIDs.config(state = Tkinter.NORMAL)
+		self.TEXT_clientNetIDs.insert(Tkinter.END, clientDetail[2])
+		self.TEXT_clientNetIDs.insert(Tkinter.END, "\n")
+		self.TEXT_clientNetIDs.config(state = Tkinter.DISABLED)
+		self.TEXT_clientPorts.config(state = Tkinter.NORMAL)
+		self.TEXT_clientPorts.insert(Tkinter.END, clientDetail[3])
+		self.TEXT_clientPorts.insert(Tkinter.END, "\n")
+		self.TEXT_clientPorts.config(state = Tkinter.DISABLED)
 
 	def connectHTTPServer(self):
 		HTTPServerName = self.ENTRY_HTTPServerIP.get()
 		HTTPServerPort = self.ENTRY_HTTPServerPort.get()
 		connection = hmclient.Connection()
 		result = connection.connectToHTTPServer(HTTPServerName, HTTPServerPort)
+		self.currentConnection = None
 
 		if result == False:
 			self.consolePrint("ERROR failed to connect to HTTP server")
@@ -69,11 +90,18 @@ class HMGUI(Tkinter.Frame):
 			self.consolePrint("START #####################################################", noprefix = True)
 			self.consolePrint("Connected to HTTPServer")
 			self.setTitle("Connected to " + self.currentConnection.string)
-			self.consolePrint("END #####################################################", noprefix = True)
+
 			if self.currentConnection.isServer():
-				self.setServerEntry(HTTPServerName)
+				self.setServerName(HTTPServerName)
+				result = self.currentConnection.getServerIP()
+				if result[0] == True:
+					print "ServerIP:"+result[1]
+					self.setServerIP(result[1])
+					self.consolePrint("ServerIP:"+result[1])
 			if self.currentConnection.isClient():
 				self.addClientEntry(HTTPServerName)
+
+			self.consolePrint("END #####################################################", noprefix = True)
 
 	def sendCommand(self):
 		command = self.ENTRY_command.get()
@@ -88,9 +116,9 @@ class HMGUI(Tkinter.Frame):
 			self.consolePrint("ERROR: NULL command")
 			return
 
-		xml_result = self.currentConnection.sendConsoleCommand(command)
-		success = xml_result[0]
-		result = xml_result[1]
+		rpc_result = self.currentConnection.sendConsoleCommand(command)
+		success = rpc_result[0]
+		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
 		self.consolePrint("Sent Command:"+command)
 		self.consolePrint("Command Result:"+str(success))
@@ -100,9 +128,9 @@ class HMGUI(Tkinter.Frame):
 	def getClientDetails(self):
 		if self.testConnection("GetClientDetails") == False:
 			return
-		xml_result = self.currentConnection.getClientDetailsList(forceUpdate=True)
-		success = xml_result[0]
-		result = xml_result[1]
+		rpc_result = self.currentConnection.getClientDetailsList(forceUpdate=True)
+		success = rpc_result[0]
+		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
 		self.consolePrint("GetClientDetails")
 		self.consolePrint("Result:"+str(success))
@@ -118,9 +146,9 @@ class HMGUI(Tkinter.Frame):
 		if self.testConnection("GetClientIPs") == False:
 			return
 
-		xml_result = self.currentConnection.getClientIPs()
-		success = xml_result[0]
-		result = xml_result[1]
+		rpc_result = self.currentConnection.getClientIPs()
+		success = rpc_result[0]
+		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
 		self.consolePrint("GetClientIPs")
 		self.consolePrint("Result:"+str(success))
@@ -129,7 +157,8 @@ class HMGUI(Tkinter.Frame):
 		self.clearClients()
 		for ci in result:
 			clientName = ci[0]
-			self.addClientEntry([clientName, "", "", ""])
+			clientIP = ci[1]
+			self.addClientEntry([clientName, clientIP, "", ""])
 
 	def testConnection(self, info):
 		valid = True
@@ -153,9 +182,9 @@ class HMGUI(Tkinter.Frame):
 		if self.testConnection("GetGameState") == False:
 			return
 
-		xml_result = self.currentConnection.getGameState()
-		success = xml_result[0]
-		result = xml_result[1]
+		rpc_result = self.currentConnection.getGameState()
+		success = rpc_result[0]
+		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
 		self.consolePrint("GetGameState")
 		self.consolePrint("Result:"+str(success))
@@ -166,9 +195,9 @@ class HMGUI(Tkinter.Frame):
 		if self.testConnection("GetClientList") == False:
 			return
 
-		xml_result = self.currentConnection.getClientList()
-		success = xml_result[0]
-		result = xml_result[1]
+		rpc_result = self.currentConnection.getClientList()
+		success = rpc_result[0]
+		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
 		self.consolePrint("GetClientList")
 		self.consolePrint("Result:"+str(success))
