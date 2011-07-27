@@ -10,8 +10,11 @@ class HMGUI(Tkinter.Frame):
 		self.createWidgets()
 		self.appTitle = "HM Tool"
 		self.connections = []
+		self.serverConnection = None
 		self.currentConnection = None
 		self.master.bind('<Escape>', self.userQuit)
+		self.serverInfo = ["", "", "", ""]
+		self.clientDetails = []
 
 	def setTitle(self, title):
 		fullTitle = self.appTitle + ":" + title
@@ -98,13 +101,28 @@ class HMGUI(Tkinter.Frame):
 					print "ServerIP:"+result[1]
 					self.setServerIP(result[1])
 					self.consolePrint("ServerIP:"+result[1])
+				self.serverConnection = self.currentConnection
+				self.serverInfo = [HTTPServerName, result[1], "", HTTPServerPort]
+
 			if self.currentConnection.isClient():
-				self.addClientEntry(HTTPServerName)
+				print "A client " + HTTPServerName + ":" + HTTPServerPort
+				clientIP = HTTPServerName
+				serverBasePort = int(self.serverInfo[3])
+				clientNetID = str(int(HTTPServerPort) - serverBasePort)
+				print "clientNetID="+clientNetID
+				for cd in self.clientDetails:
+					if cd[2] == clientNetID:
+						cd[3] = HTTPServerPort
+						break;
+				self.updateClientsDisplay()
 
 			self.consolePrint("END #####################################################", noprefix = True)
 
 	def sendCommand(self):
-		command = self.ENTRY_command.get()
+		commandParams = self.ENTRY_command.get()
+		commandParamsList = commandParams.split()
+		command = commandParamsList.pop(0)
+		params = " ".join(commandParamsList)
 		if self.testConnection(command) == False:
 			return
 
@@ -116,11 +134,12 @@ class HMGUI(Tkinter.Frame):
 			self.consolePrint("ERROR: NULL command")
 			return
 
-		rpc_result = self.currentConnection.sendConsoleCommand(command)
+		rpc_result = self.currentConnection.sendConsoleCommand(command, params)
 		success = rpc_result[0]
 		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
 		self.consolePrint("Sent Command:"+command)
+		self.consolePrint("Params:"+params)
 		self.consolePrint("Command Result:"+str(success))
 		self.consolePrint(result)
 		self.consolePrint("END #####################################################", noprefix=True)
@@ -128,7 +147,7 @@ class HMGUI(Tkinter.Frame):
 	def getClientDetails(self):
 		if self.testConnection("GetClientDetails") == False:
 			return
-		rpc_result = self.currentConnection.getClientDetailsList(forceUpdate=True)
+		rpc_result = self.serverConnection.getClientDetailsList(forceUpdate=True)
 		success = rpc_result[0]
 		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
@@ -138,15 +157,19 @@ class HMGUI(Tkinter.Frame):
 		for cd in result:
 			self.consolePrint("Name:"+cd[0]+" IP:"+cd[1]+" NetID:"+cd[2]+" Port:"+cd[3])
 		self.consolePrint("END #####################################################", noprefix=True)
+		self.clientDetails = result
+		self.updateClientsDisplay()
+
+	def updateClientsDisplay(self):
 		self.clearClients()
-		for cd in result:
+		for cd in self.clientDetails:
 			self.addClientEntry(cd)
 
 	def getClientIPs(self):
-		if self.testConnection("GetClientIPs") == False:
+		if self.testServerConnection("GetClientIPs") == False:
 			return
 
-		rpc_result = self.currentConnection.getClientIPs()
+		rpc_result = self.serverConnection.getClientIPs()
 		success = rpc_result[0]
 		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
@@ -154,11 +177,33 @@ class HMGUI(Tkinter.Frame):
 		self.consolePrint("Result:"+str(success))
 		self.consolePrint(result)
 		self.consolePrint("END #####################################################", noprefix=True)
-		self.clearClients()
+
+		self.clientDetails = []
 		for ci in result:
 			clientName = ci[0]
 			clientIP = ci[1]
-			self.addClientEntry([clientName, clientIP, "", ""])
+			clientNetID = ""
+			clientPort = ""
+			self.clientDetails.append([clientName, clientIP, clientNetID, clientPort])
+
+		self.updateClientsDisplay()
+
+	def testServerConnection(self, info):
+		valid = True
+		if self.serverConnection == None:
+			valid = False
+		else:
+			if self.serverConnection.valid == False:
+				valid = False
+
+		if valid == False:
+			self.consolePrint("START #####################################################", noprefix=True)
+			self.consolePrint(info)
+			self.consolePrint("ERROR: HTTP server not connected")
+			self.consolePrint("END #####################################################", noprefix=True)
+			return False
+
+		return True
 
 	def testConnection(self, info):
 		valid = True
@@ -179,10 +224,10 @@ class HMGUI(Tkinter.Frame):
 
 
 	def getGameState(self):
-		if self.testConnection("GetGameState") == False:
+		if self.testServerConnection("GetGameState") == False:
 			return
 
-		rpc_result = self.currentConnection.getGameState()
+		rpc_result = self.serverConnection.getGameState()
 		success = rpc_result[0]
 		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
@@ -192,10 +237,10 @@ class HMGUI(Tkinter.Frame):
 		self.consolePrint("END #####################################################", noprefix=True)
 
 	def getClientList(self):
-		if self.testConnection("GetClientList") == False:
+		if self.testServerConnection("GetClientList") == False:
 			return
 
-		rpc_result = self.currentConnection.getClientList()
+		rpc_result = self.serverConnection.getClientList()
 		success = rpc_result[0]
 		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
@@ -206,10 +251,20 @@ class HMGUI(Tkinter.Frame):
 			self.consolePrint("Name:"+ci[0]+" NetID:"+ci[1])
 		self.consolePrint("END #####################################################", noprefix=True)
 
-		self.clearClients()
+		self.clientDetails = []
 		for ci in result:
 			clientName = ci[0]
-			self.addClientEntry([clientName,"", "", ""])
+			clientIP = ""
+			clientNetID = ""
+			clientPort = ""
+			self.clientDetails.append([clientName, clientIP, clientNetID, clientPort])
+
+		self.updateClientsDisplay()
+
+	def jakeTest(self):
+		if self.testServerConnection("jakeTest") == False:
+			return
+		rpcResult = self.serverConnection.sendConsoleCommand("jake", "129 140 141")
 
 	def returnKey(self, event):
 		self.sendCommand()
@@ -244,7 +299,7 @@ class HMGUI(Tkinter.Frame):
 		self.LABEL_HTTPServerPort = Tkinter.Label(self, text = "HTTP Server Port")
 		self.LABEL_HTTPServerPort.grid(row = curRow, column = curCol)
 		curCol += 1
-		self.ENTRY_HTTPServerPort = Tkinter.Entry(self, width = 5)
+		self.ENTRY_HTTPServerPort = Tkinter.Entry(self, width = 7)
 		self.ENTRY_HTTPServerPort.insert(0, "31415")
 		self.ENTRY_HTTPServerPort.grid(row = curRow, column = curCol)
 		curCol += 1
@@ -301,10 +356,10 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_clientIPs = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientIPBoxWidth, height = 16, bg = disableBGcolour)
 		self.TEXT_clientIPs.grid(row = curRow, column = curCol, rowspan=16)
 		curCol += 1
-		self.TEXT_clientNetIDs = Tkinter.Text(self, state = Tkinter.DISABLED, width = 5, height = 16, bg = disableBGcolour)
+		self.TEXT_clientNetIDs = Tkinter.Text(self, state = Tkinter.DISABLED, width = 6, height = 16, bg = disableBGcolour)
 		self.TEXT_clientNetIDs.grid(row = curRow, column = curCol, rowspan=16)
 		curCol += 1
-		self.TEXT_clientPorts = Tkinter.Text(self, state = Tkinter.DISABLED, width = 5, height = 16, bg = disableBGcolour)
+		self.TEXT_clientPorts = Tkinter.Text(self, state = Tkinter.DISABLED, width = 6, height = 16, bg = disableBGcolour)
 		self.TEXT_clientPorts.grid(row = curRow, column = curCol, rowspan=16)
 		curCol += 1
 
@@ -318,18 +373,21 @@ class HMGUI(Tkinter.Frame):
 		curCol = 0
 		self.BUTTON_quit = Tkinter.Button(self, text = "QUIT", fg = "red", command = self.quit)
 		self.BUTTON_quit.grid(row = curRow, column = curCol, columnspan = 1)
-		curCol += 4
-		self.BUTTON_getIPs = Tkinter.Button(self, text = "Get Client Details", command = self.getClientDetails)
-		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
+		curCol += 1
+		self.BUTTON_getGameState = Tkinter.Button(self, text = "Output Game State", command = self.getGameState)
+		self.BUTTON_getGameState.grid(row = curRow, column = curCol, columnspan = 3)
+		curCol += 3
+		self.BUTTON_getClientList = Tkinter.Button(self, text = "Get Client List", command = self.getClientList)
+		self.BUTTON_getClientList.grid(row = curRow, column = curCol)
 		curCol += 1
 		self.BUTTON_getIPs = Tkinter.Button(self, text = "Get Client IPs", command = self.getClientIPs)
 		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
 		curCol += 1
-		self.BUTTON_getGameState = Tkinter.Button(self, text = "Get Game State", command = self.getGameState)
-		self.BUTTON_getGameState.grid(row = curRow, column = curCol)
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Get Client Details", command = self.getClientDetails)
+		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
 		curCol += 1
-		self.BUTTON_getClientList = Tkinter.Button(self, text = "Get Client List", command = self.getClientList)
-		self.BUTTON_getClientList.grid(row = curRow, column = curCol)
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Jake Test", command = self.jakeTest)
+		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
 		curCol += 1
 
 		curRow += 1
