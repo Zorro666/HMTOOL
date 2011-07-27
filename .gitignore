@@ -1,2 +1,4 @@
 *.swp
 *.pyc
+Client*.xml
+Server*.xml
