@@ -12,6 +12,7 @@ class Connection():
 		self.host = ""
 		self.port = ""
 		self.connection = xmlrpcclient.XMLRPCClient(self.host, self.port)
+		self.clientDetails = []
 
 	def connectToHTTPServer(self, host, port):
 		hostAddress = host
@@ -91,6 +92,14 @@ class Connection():
 				foundStart = 1
 				clientInfos = []
 
+		self.clientDetails = []
+		for ci in clientInfos:
+# Name, IP, NetID, port
+			cd = [ci[0], ci[1], "", ""]
+			self.clientDetails.append(cd)
+
+		self.dumpClientDetails()
+
 		info = ""
 		for ci in clientInfos:
 			infoStr = "Client:'"+ci[0]+"' IP:"+ci[1]
@@ -120,9 +129,40 @@ class Connection():
 					clientList.append(ci)
 
 		for ci in clientList:
+# Name, IP, NetID, port
+			for cd in self.clientDetails:
+				if cd[0] == ci[0]:
+					cd[2] = ci[1]
+					break
+			
+		for ci in clientList:
 			print "Name:", ci[0], " NetID:",ci[1]
 
+		self.dumpClientDetails()
+
 		return [True, clientList]
+
+	def dumpClientDetails(self):
+		print "ClientDetails"
+		for cd in self.clientDetails:
+			infoStr = "Client Name:'"+cd[0]+"' IP:"+cd[1]+ " NetID:"+cd[2]+ " Port:"+cd[3]
+			print infoStr
+
+	def getClientDetailsList(self, forceUpdate = False):
+		if len(self.clientDetails) > 0:
+			if forceUpdate == False:
+				return [True, self.clientDetails]
+
+		result = self.getClientIPs()
+		if result[0] == False:
+			self.clientDetails = []
+			return [False, ""]
+		result = self.getClientList()
+		if result[0] == False:
+			self.clientDetails = []
+			return [False, ""]
+
+		return [True, self.clientDetails]
 
 	def getGameState(self):
 		xml_result = self.sendConsoleCommand("g_hm_dump_game_state")

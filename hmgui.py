@@ -30,21 +30,28 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_console.config(state = Tkinter.DISABLED)
 
 	def setServerEntry(self, serverName):
-		self.TEXT_server.config(state = Tkinter.NORMAL)
-		self.TEXT_server.delete(1.0, Tkinter.END)
-		self.TEXT_server.insert(Tkinter.END, serverName)
-		self.TEXT_server.config(state = Tkinter.DISABLED)
+		self.TEXT_serverName.config(state = Tkinter.NORMAL)
+		self.TEXT_serverName.delete(1.0, Tkinter.END)
+		self.TEXT_serverName.insert(Tkinter.END, serverName)
+		self.TEXT_serverName.config(state = Tkinter.DISABLED)
 
 	def clearClients(self):
-		self.TEXT_clients.config(state = Tkinter.NORMAL)
-		self.TEXT_clients.delete(1.0, Tkinter.END)
-		self.TEXT_clients.config(state = Tkinter.DISABLED)
+		self.TEXT_clientNames.config(state = Tkinter.NORMAL)
+		self.TEXT_clientNames.delete(1.0, Tkinter.END)
+		self.TEXT_clientNames.config(state = Tkinter.DISABLED)
+		self.TEXT_clientIPs.config(state = Tkinter.NORMAL)
+		self.TEXT_clientIPs.delete(1.0, Tkinter.END)
+		self.TEXT_clientIPs.config(state = Tkinter.DISABLED)
 
-	def addClientEntry(self, clientName):
-		self.TEXT_clients.config(state = Tkinter.NORMAL)
-		self.TEXT_clients.insert(Tkinter.END, clientName)
-		self.TEXT_clients.insert(Tkinter.END, "\n")
-		self.TEXT_clients.config(state = Tkinter.DISABLED)
+	def addClientEntry(self, clientDetail):
+		self.TEXT_clientNames.config(state = Tkinter.NORMAL)
+		self.TEXT_clientNames.insert(Tkinter.END, clientDetail[0])
+		self.TEXT_clientNames.insert(Tkinter.END, "\n")
+		self.TEXT_clientNames.config(state = Tkinter.DISABLED)
+		self.TEXT_clientIPs.config(state = Tkinter.NORMAL)
+		self.TEXT_clientIPs.insert(Tkinter.END, clientDetail[1])
+		self.TEXT_clientIPs.insert(Tkinter.END, "\n")
+		self.TEXT_clientIPs.config(state = Tkinter.DISABLED)
 
 	def connectHTTPServer(self):
 		HTTPServerName = self.ENTRY_HTTPServerIP.get()
@@ -90,6 +97,23 @@ class HMGUI(Tkinter.Frame):
 		self.consolePrint(result)
 		self.consolePrint("END #####################################################", noprefix=True)
 
+	def getClientDetails(self):
+		if self.testConnection("GetClientDetails") == False:
+			return
+		xml_result = self.currentConnection.getClientDetailsList()
+		success = xml_result[0]
+		result = xml_result[1]
+		self.consolePrint("START #####################################################", noprefix=True)
+		self.consolePrint("GetClientDetails")
+		self.consolePrint("Result:"+str(success))
+		self.consolePrint(result)
+		for cd in result:
+			self.consolePrint("Name:"+cd[0]+" IP:"+cd[1]+" NetID:"+cd[2]+" Port:"+cd[3])
+		self.consolePrint("END #####################################################", noprefix=True)
+		self.clearClients()
+		for cd in result:
+			self.addClientEntry(cd)
+
 	def getClientIPs(self):
 		if self.testConnection("GetClientIPs") == False:
 			return
@@ -105,7 +129,7 @@ class HMGUI(Tkinter.Frame):
 		self.clearClients()
 		for ci in result:
 			clientName = ci[0]
-			self.addClientEntry(clientName)
+			self.addClientEntry([clientName, "", "", ""])
 
 	def testConnection(self, info):
 		valid = True
@@ -153,6 +177,11 @@ class HMGUI(Tkinter.Frame):
 			self.consolePrint("Name:"+ci[0]+" NetID:"+ci[1])
 		self.consolePrint("END #####################################################", noprefix=True)
 
+		self.clearClients()
+		for ci in result:
+			clientName = ci[0]
+			self.addClientEntry([clientName,"", "", ""])
+
 	def returnKey(self, event):
 		self.sendCommand()
 
@@ -160,20 +189,33 @@ class HMGUI(Tkinter.Frame):
 		self.quit()
 
 	def createWidgets(self):
+		serverClientBoxWidth = 15
+		serverClientIPBoxWidth = 16
+		disableBGcolour = "#CCCCCC"
+		disableFGcolour = "#000000"
+
 		curRow = 0
 		curCol = 0
+		self.LABEL_serverName = Tkinter.Label(self, text = "Server Name")
+		self.LABEL_serverName.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 1
+		self.LABEL_clientIP = Tkinter.Label(self, text = "Server IP")
+		self.LABEL_clientIP.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 1
+
+		curCol += 2
 		self.LABEL_HTTPServerIP = Tkinter.Label(self, text = "HTTP Server IP")
-		self.LABEL_HTTPServerIP.grid(row = curRow, column = curCol)
+		self.LABEL_HTTPServerIP.grid(row = curRow, column = curCol, columnspan = 1)
 		curCol += 1
 		self.ENTRY_HTTPServerIP = Tkinter.Entry(self)
 		self.ENTRY_HTTPServerIP.insert(0, "localhost")
-		self.ENTRY_HTTPServerIP.grid(row = curRow, column = curCol)
+		self.ENTRY_HTTPServerIP.grid(row = curRow, column = curCol, columnspan = 1)
 		curCol += 1
 
 		self.LABEL_HTTPServerPort = Tkinter.Label(self, text = "HTTP Server Port")
 		self.LABEL_HTTPServerPort.grid(row = curRow, column = curCol)
 		curCol += 1
-		self.ENTRY_HTTPServerPort = Tkinter.Entry(self)
+		self.ENTRY_HTTPServerPort = Tkinter.Entry(self, width = 5)
 		self.ENTRY_HTTPServerPort.insert(0, "31415")
 		self.ENTRY_HTTPServerPort.grid(row = curRow, column = curCol)
 		curCol += 1
@@ -184,6 +226,12 @@ class HMGUI(Tkinter.Frame):
 
 		curRow += 1
 		curCol = 0
+		self.TEXT_serverName = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientBoxWidth, height = 1, bg = disableBGcolour, fg = disableFGcolour)
+		self.TEXT_serverName.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 1
+		self.TEXT_serverIP = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientIPBoxWidth, height = 1, bg = disableBGcolour)
+		self.TEXT_serverIP.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 3
 		self.LABEL_command = Tkinter.Label(self, text = "Command")
 		self.LABEL_command.grid(row = curRow, column = curCol, columnspan = 1)
 		curCol += 1
@@ -198,33 +246,52 @@ class HMGUI(Tkinter.Frame):
 
 		curRow += 1
 		textSavedRow = curRow
-		serverClientBoxWidth = 20
 		curCol = 0
-		self.LABEL_server = Tkinter.Label(self, text = "Server")
-		self.LABEL_server.grid(row = curRow, column = curCol)
+		self.LABEL_clientNames = Tkinter.Label(self, text = "Client Details")
+		self.LABEL_clientNames.grid(row = curRow, column = curCol, columnspan = 4)
 		curRow += 1
 		curCol = 0
-		self.TEXT_server = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientBoxWidth, height = 1)
-		self.TEXT_server.grid(row = curRow, column = curCol)
+		self.LABEL_clientName = Tkinter.Label(self, text = "Name")
+		self.LABEL_clientName.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 1
+		self.LABEL_clientIP = Tkinter.Label(self, text = "IP")
+		self.LABEL_clientIP.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 1
+		self.LABEL_clientNetID = Tkinter.Label(self, text = "NetID")
+		self.LABEL_clientNetID.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 1
+		self.LABEL_clientPort = Tkinter.Label(self, text = "Port")
+		self.LABEL_clientPort.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 1
+
 		curRow += 1
 		curCol = 0
-		self.LABEL_clients = Tkinter.Label(self, text = "Clients")
-		self.LABEL_clients.grid(row = curRow, column = curCol)
-		curRow += 1
-		curCol = 0
-		self.TEXT_clients = Tkinter.Text(self, state = Tkinter.DISABLED, width =  serverClientBoxWidth, height = 16)
-		self.TEXT_clients.grid(row = curRow, column = curCol, rowspan=16)
+		self.TEXT_clientNames = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientBoxWidth, height = 16, bg = disableBGcolour)
+		self.TEXT_clientNames.grid(row = curRow, column = curCol, rowspan=16)
+		curCol += 1
+		self.TEXT_clientIPs = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientIPBoxWidth, height = 16, bg = disableBGcolour)
+		self.TEXT_clientIPs.grid(row = curRow, column = curCol, rowspan=16)
+		curCol += 1
+		self.TEXT_clientNetIDs = Tkinter.Text(self, state = Tkinter.DISABLED, width = 5, height = 16, bg = disableBGcolour)
+		self.TEXT_clientNetIDs.grid(row = curRow, column = curCol, rowspan=16)
+		curCol += 1
+		self.TEXT_clientPorts = Tkinter.Text(self, state = Tkinter.DISABLED, width = 5, height = 16, bg = disableBGcolour)
+		self.TEXT_clientPorts.grid(row = curRow, column = curCol, rowspan=16)
+		curCol += 1
 
 		curRow = textSavedRow
-		curCol += 1
-		self.TEXT_console = Tkinter.Text(self, state = Tkinter.DISABLED)
-		self.TEXT_console.grid(row = curRow, column = curCol, rowspan=21, columnspan = 10)
-		curCol += 1
+		curCol = 4
+		self.TEXT_console = Tkinter.Text(self, state = Tkinter.DISABLED, width = 100, height = 18, bg = disableBGcolour)
+		self.TEXT_console.grid(row = curRow, column = curCol, rowspan = 20, columnspan = 7)
+		curCol += 7
 
-		curRow += 21
+		curRow += 20
 		curCol = 0
 		self.BUTTON_quit = Tkinter.Button(self, text = "QUIT", fg = "red", command = self.quit)
-		self.BUTTON_quit.grid(row = curRow, column = curCol)
+		self.BUTTON_quit.grid(row = curRow, column = curCol, columnspan = 1)
+		curCol += 4
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Get Client Details", command = self.getClientDetails)
+		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
 		curCol += 1
 		self.BUTTON_getIPs = Tkinter.Button(self, text = "Get Client IPs", command = self.getClientIPs)
 		self.BUTTON_getIPs.grid(row = curRow, column = curCol)

@@ -1,11 +1,13 @@
+hmgui: Server: Name, IP labels
+hmgui: Client: Name, IP, NetID, Port labels
+hmgui: fill im server IP
+hmgui: Client fill in NetID
+
 hmclient: connect to client IP, port = serverPort + netID (client), port = serverPort - netID (shadow client)
+hmgui: Client fill in port
 
 hmclient: get hm game state from clients & server - save them 
-
 hmclient: parse hm game state and compare it - output difference
-
-hmgui: get & parse client IP list from server
-hmgui: get & parse client name, netID from server into list
 
 Status:
 [CONSOLE] Executing console command 'status'
