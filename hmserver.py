@@ -69,14 +69,19 @@ def status():
 
 	return str(statusResult)
 
-def g_hm_dump_game_state():
-	print "g_hm_dump_game_state"
+def g_hm_dump_gamestate():
+	print "g_hm_dump_gamestate"
 	if gameServer:
 		fileName = "Server__NOTPC1161.xml"
 	if gameClient:
 		fileName = "Client_zorro_NOTPC1161.xml"
 	f = open(fileName, 'r')
-	gameState = f.read()
+ 
+	gameState = "Command: g_hm_dump_gamestate" + "\n"
+	gameState += "Result: [CONSOLE] Executing console command 'g_hm_dump_gamestate'" + "\n"
+	gameState += f.read()
+	gameState += "--------------------------------------------------------------------------------" + "\n"
+	gameState += "Host Migration:DumpGameStateHM output to '%USER%/HostMigration/Server__NOTPC1161.xml'" + "\n"     
 
 	return gameState
 
@@ -89,7 +94,7 @@ if gameClient:
 	print "Acting as a fake game client"
 print ""
 
-server.register_function(g_hm_dump_game_state)
+server.register_function(g_hm_dump_gamestate)
 server.register_function(status)
 server.serve_forever()
 
