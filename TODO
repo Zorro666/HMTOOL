@@ -1,7 +1,5 @@
-hmgui: Server: Name, IP labels
-hmgui: Client: Name, IP, NetID, Port labels
-hmgui: fill im server IP
-hmgui: Client fill in NetID
+hmclient: get game state only return the xml not the whole command output
+hmclient: fix get client details to find the XML in the command output
 
 hmclient: connect to client IP, port = serverPort + netID (client), port = serverPort - netID (shadow client)
 hmgui: Client fill in port
@@ -9,6 +7,9 @@ hmgui: Client fill in port
 hmclient: get hm game state from clients & server - save them 
 hmclient: parse hm game state and compare it - output difference
 
+#####################################
+SERVER STATUS OUTPUT
+#####################################
 Status:
 [CONSOLE] Executing console command 'status'
 -----------------------------------------
@@ -24,6 +25,9 @@ time remaining: 19:10
 Connection Status:
 name: zorro  id: 1  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5
 
+#####################################
+CLIENT STATUS OUTPUT
+#####################################
 Client:
 [CONSOLE] Executing console command 'status'
 -----------------------------------------
