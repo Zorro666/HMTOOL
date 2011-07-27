@@ -55,7 +55,7 @@ def g_hm_dump_game_state():
 	if gameServer:
 		fileName = "Server__NOTPC1161.xml"
 	if gameClient:
-		fileName = "Client_jake_NOTPC1161.xml"
+		fileName = "Client_zorro_NOTPC1161.xml"
 	f = open(fileName, 'r')
 	gameState = f.read()
 
