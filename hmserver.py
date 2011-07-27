@@ -7,6 +7,8 @@ import SimpleXMLRPCServer
 debug = 0
 gameServer = 1
 gameClient = 0
+host = "0.0.0.0"
+portStr = "31415"
 
 for arg in sys.argv:
 	if arg == "-server":
@@ -17,6 +19,23 @@ for arg in sys.argv:
 		gameClient = 1
 	if arg == "-debug":
 		debug = 1
+	if arg.startswith("-port="):
+			portStr = arg[len("-port="):]
+	if arg.startswith("-host="):
+			host = arg[len("-host="):]
+
+print "debug=",debug
+print "gameServer=",gameServer
+print "gameClient=",gameClient
+print "host=",host
+print "portStr=",portStr
+
+if portStr.isdigit() == False:
+	print "ERROR port must be a number"
+	sys.exit(-1)
+
+port = int(portStr)
+print "port=",str(port)
 
 def status():
 	print "status"
@@ -61,12 +80,14 @@ def g_hm_dump_game_state():
 
 	return gameState
 
-server = SimpleXMLRPCServer.SimpleXMLRPCServer(("localhost", 31415), logRequests = debug)
-print "Hello I am a HTTP server"
+server = SimpleXMLRPCServer.SimpleXMLRPCServer((host, port), logRequests = debug)
+print ""
+print "Hello I am a HTTP server running on "+host+":"+str(port)
 if gameServer:
 	print "Acting as a fake game server"
 if gameClient:
 	print "Acting as a fake game client"
+print ""
 
 server.register_function(g_hm_dump_game_state)
 server.register_function(status)
