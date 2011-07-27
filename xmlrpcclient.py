@@ -164,7 +164,7 @@ class XMLRPCClient():
 		print "Result:", result
 		return True
 
-	def processResult(self, command, result):
+	def processResult(self, command, params, result):
 		index = result.find(unknownCommand)
 		if (index == 0):
 			print "Command:", command, "Function not found"
@@ -180,6 +180,7 @@ class XMLRPCClient():
 			self.authenticate()
 			return result_retryCommand
 		print "Command:", command
+		print "Params:", params
 		print "Result:", result
 		return result_success
 
@@ -202,7 +203,7 @@ class XMLRPCClient():
 				print "sendConsoleCommand: xmlrpc failed"
 				return [False, ""]
 			result = xmlrpc_result[1]
-			status = self.processResult(command, result)
+			status = self.processResult(command, params, result)
 		return [True, result]
 
 def runTest():
