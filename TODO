@@ -1,11 +1,17 @@
-hmclient: get game state only return the xml not the whole command output
-hmclient: fix get client details to find the XML in the command output
-
 hmclient: connect to client IP, port = serverPort + netID (client), port = serverPort - netID (shadow client)
 hmgui: Client fill in port
 
 hmclient: get hm game state from clients & server - save them 
 hmclient: parse hm game state and compare it - output difference
+
+hmgui: colour current connection in red
+hmgui: select between different connections somehow
+
+GAME: server spawns HTTP servers on clients
+server gives names, IPs -> client
+connect to clients one by one
+
+test client by name (status) + port from netID (predicted)
 
 #####################################
 SERVER STATUS OUTPUT
