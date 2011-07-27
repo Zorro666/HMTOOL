@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import xml.parsers.expat
+import xml.etree.ElementTree
 import httplib
 import hashlib
 import socket
@@ -10,31 +10,11 @@ serverDebug=0
 password="password"
 
 unknownCommand = "$6[Warning] Unknown command: "
+isNotSupported = "is not supported"
 
 result_commandNotFound = 0
 result_retryCommand = 1
 result_success = 2
-
-xmlrpc_return_string = ""
-
-# 3 handler functions
-def xml_start_element(name, attrs):
-	global serverDebug
-	if serverDebug:
-		print 'Start element:', name, attrs
-
-def xml_end_element(name):
-	global serverDebug
-	if serverDebug:
-		print 'End element:', name
-
-def xml_char_data(data):
-	global xmlrpc_return_string
-	xmlrpc_return_string += str(data)
-	global serverDebug
-	if serverDebug:
-		print xmlrpc_return_string
-		print 'Character data:', repr(data)
 
 class XMLRPCClient():
 	def __init__(self, host, port):
@@ -108,20 +88,56 @@ class XMLRPCClient():
 			result_commandNotFound = 0
 			return [True, unknownCommand]
 
-		global xmlrpc_return_string
+		xmlrpcResult = xml.etree.ElementTree.XML(result)
+		if xmlrpcResult.tag != "methodResponse":
+			print "xmlrpc ERROR bad root node", xmlrpcResult.tag, "should be methodResponse"
+			return [False, ""]
+
 		xmlrpc_return_string = ""
 
-		xmlp = xml.parsers.expat.ParserCreate()
-		xmlp.StartElementHandler = xml_start_element
-		xmlp.EndElementHandler = xml_end_element
-		xmlp.CharacterDataHandler = xml_char_data
+		for node in xmlrpcResult:
+			if node.tag == "fault":
+				print "xmlrpc ERROR fault node found"
+				faultStr = ""
+				for value in node:
+					if value.tag != "value":
+						print "xmlrpc ERROR fault.value node not found"
+						return [False, xmlrpc_return_string]
+					for struct in value:
+						if struct.tag != "struct":
+							print "xmlrpc ERROR fault.value.struct node not found"
+							return [False, xmlrpc_return_string]
+						for member in struct:
+							if member.tag != "member":
+								print "xmlrpc ERROR fault.value.struct.member node not found"
+								return [False, xmlrpc_return_string]
+							nameStr = ""
+							valueStr = ""
+							for data in member:
+								if data.tag == "name":
+									nameStr = data.text
+								if data.tag == "value":
+									valueStr = data[0].text
 
-		xmlp.Parse(result)
+							if len(nameStr) > 0:
+								faultStr += "Name:" + nameStr + " Value:" + valueStr + "\n"
 
-		if self.serverDebug:
-			print "START New Reply:"
-			print xmlrpc_return_string
-			print "END New Reply:"
+				xmlrpc_return_string = faultStr
+				print "Fault:"
+				print xmlrpc_return_string
+				return [True, xmlrpc_return_string]
+
+			if node.tag == "params":
+				for param in node:
+					if param.tag != "param":
+						print "xmlrpc ERROR params.param node not found"
+						return [False, xmlrpc_return_string]
+					for value in param:
+						if value.tag != "value":
+							print "xmlrpc ERROR params.param.value node not found"
+							return [False, xmlrpc_return_string]
+						valueStr = value[0].text
+						xmlrpc_return_string += valueStr
 
 		return [True, xmlrpc_return_string]
 
@@ -153,6 +169,12 @@ class XMLRPCClient():
 		if (index == 0):
 			print "    Function not found"
 			return result_commandNotFound
+
+		index = result.find(isNotSupported)
+		if (index != 0):
+			print "    Function not found"
+			return result_commandNotFound
+
 		if (result == "Illegal Command"):
 			print "Not authenticated"
 			self.authenticate()
