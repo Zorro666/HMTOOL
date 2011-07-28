@@ -15,6 +15,7 @@ class HMGUI(Tkinter.Frame):
 		self.master.bind('<Escape>', self.userQuit)
 		self.serverInfo = ["", "", "", ""]
 		self.clientDetails = []
+		self.selectedClient = None
 
 	def setTitle(self, title):
 		fullTitle = self.appTitle + ":" + title
@@ -44,6 +45,15 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_serverIP.insert(Tkinter.END, serverIP)
 		self.TEXT_serverIP.config(state = Tkinter.DISABLED)
 
+	def setServerSelected(self, selected):
+		if selected:
+			fgColour = "red"
+		else:
+			fgColour = "black"
+		self.TEXT_serverName.config(fg = fgColour)
+		self.TEXT_serverIP.config(fg = fgColour)
+		self.setClientSelected(None)
+
 	def clearClients(self):
 		self.TEXT_clientNames.config(state = Tkinter.NORMAL)
 		self.TEXT_clientNames.delete(1.0, Tkinter.END)
@@ -58,23 +68,33 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_clientPorts.delete(1.0, Tkinter.END)
 		self.TEXT_clientPorts.config(state = Tkinter.DISABLED)
 
-	def addClientEntry(self, clientDetail):
-		self.TEXT_clientNames.config(state = Tkinter.NORMAL)
+	def addClientEntry(self, clientDetail, selected):
+		if selected:
+			fgColour = "red"
+		else:
+			fgColour = "black"
+
+		self.TEXT_clientNames.config(state = Tkinter.NORMAL, fg = fgColour)
 		self.TEXT_clientNames.insert(Tkinter.END, clientDetail[0])
 		self.TEXT_clientNames.insert(Tkinter.END, "\n")
 		self.TEXT_clientNames.config(state = Tkinter.DISABLED)
-		self.TEXT_clientIPs.config(state = Tkinter.NORMAL)
+		self.TEXT_clientIPs.config(state = Tkinter.NORMAL, fg = fgColour)
 		self.TEXT_clientIPs.insert(Tkinter.END, clientDetail[1])
 		self.TEXT_clientIPs.insert(Tkinter.END, "\n")
 		self.TEXT_clientIPs.config(state = Tkinter.DISABLED)
-		self.TEXT_clientNetIDs.config(state = Tkinter.NORMAL)
+		self.TEXT_clientNetIDs.config(state = Tkinter.NORMAL, fg = fgColour)
 		self.TEXT_clientNetIDs.insert(Tkinter.END, clientDetail[2])
 		self.TEXT_clientNetIDs.insert(Tkinter.END, "\n")
 		self.TEXT_clientNetIDs.config(state = Tkinter.DISABLED)
-		self.TEXT_clientPorts.config(state = Tkinter.NORMAL)
+		self.TEXT_clientPorts.config(state = Tkinter.NORMAL, fg = fgColour)
 		self.TEXT_clientPorts.insert(Tkinter.END, clientDetail[3])
 		self.TEXT_clientPorts.insert(Tkinter.END, "\n")
 		self.TEXT_clientPorts.config(state = Tkinter.DISABLED)
+
+	def setClientSelected(self, clientDetail):
+		self.selectedClient = clientDetail
+		if clientDetail != None:
+			self.setServerSelected(False)
 
 	def connectHTTPServer(self):
 		HTTPServerName = self.ENTRY_HTTPServerIP.get()
@@ -103,6 +123,8 @@ class HMGUI(Tkinter.Frame):
 					self.consolePrint("ServerIP:"+result[1])
 				self.serverConnection = self.currentConnection
 				self.serverInfo = [HTTPServerName, result[1], "", HTTPServerPort]
+				self.setServerSelected(True)
+				self.consolePrint("is a server")
 
 			if self.currentConnection.isClient():
 				print "A client " + HTTPServerName + ":" + HTTPServerPort
@@ -115,6 +137,8 @@ class HMGUI(Tkinter.Frame):
 						cd[3] = HTTPServerPort
 						break;
 				self.updateClientsDisplay()
+				self.setClientSelected(cd)
+				self.consolePrint("is a client")
 
 			self.consolePrint("END #####################################################", noprefix = True)
 
@@ -123,6 +147,9 @@ class HMGUI(Tkinter.Frame):
 		commandParamsList = commandParams.split()
 		command = commandParamsList.pop(0)
 		params = " ".join(commandParamsList)
+		self.sendCommandInternal(command, params)
+
+	def sendCommandInternal(self, command, params):
 		if self.testConnection(command) == False:
 			return
 
@@ -155,6 +182,8 @@ class HMGUI(Tkinter.Frame):
 		self.consolePrint("Result:"+str(success))
 		self.consolePrint(result)
 		for cd in result:
+			clientPort = str(int(self.serverInfo[3]) + int(cd[2]))
+			cd[3] = clientPort
 			self.consolePrint("Name:"+cd[0]+" IP:"+cd[1]+" NetID:"+cd[2]+" Port:"+cd[3])
 		self.consolePrint("END #####################################################", noprefix=True)
 		self.clientDetails = result
@@ -163,7 +192,12 @@ class HMGUI(Tkinter.Frame):
 	def updateClientsDisplay(self):
 		self.clearClients()
 		for cd in self.clientDetails:
-			self.addClientEntry(cd)
+			selected = False
+			if self.selectedClient != None:
+				# Match on port number only at the moment but should be IP + port number
+				if cd[3] == self.selectedClient[3]:
+					selected = True
+			self.addClientEntry(cd, selected)
 
 	def getClientIPs(self):
 		if self.testServerConnection("GetClientIPs") == False:
@@ -262,9 +296,10 @@ class HMGUI(Tkinter.Frame):
 		self.updateClientsDisplay()
 
 	def jakeTest(self):
-		if self.testServerConnection("jakeTest") == False:
-			return
-		rpcResult = self.serverConnection.sendConsoleCommand("jake", "129 140 141")
+		oldConnection = self.currentConnection
+		self.currentConnection = self.serverConnection
+		self.sendCommandInternal("jake", "129 140 141")
+		self.currentConnection = oldConnection
 
 	def returnKey(self, event):
 		self.sendCommand()

@@ -1,3 +1,4 @@
+hmgui: colour client display and put in predicted port number, black not connected, blue connected but not selected, red = selected
 hmclient: connect to client IP, port = serverPort + netID (client), port = serverPort - netID (shadow client)
 hmgui: Client fill in port
 

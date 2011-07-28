@@ -100,7 +100,7 @@ def jake(params):
 		print serverName+cmdline
 		args = shlex.split(cmdline)
 		p = subprocess.Popen(args)
-		resultStr += "NetID " + netID + " client "+ clientPort
+		resultStr += "NetID " + netID + " client "+ clientPort + "\n"
 
 	return resultStr
 
