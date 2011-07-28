@@ -47,7 +47,7 @@ def status():
 		statusResult += "-----------------------------------------" + "\n"
 		statusResult += "Server Status:" + "\n"
 		statusResult += "name: " + "\n"
-		statusResult += "ip: NOTPC1161" + "\n"
+		statusResult += "ip: localhost" + "\n"
 		statusResult += "version: 1.0.0.1" + "\n"
 		statusResult += "level: pvp/dst_lighthouse" + "\n"
 		statusResult += "gamerules: Seizure" + "\n"
@@ -55,9 +55,12 @@ def status():
 		statusResult += "time remaining: 19:10" + "\n"
 		statusResult += " -----------------------------------------" + "\n"
 		statusResult += "Connection Status:" + "\n"
-		statusResult += "name: zorro  id: 1  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
-		statusResult += "name: zorro2 id: 2  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
-		statusResult += "name: zorro3 id: 2  ip: [10.16.5.162]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+		statusResult += "name: zorro  id: 1  ip: [localhost]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+		statusResult += "name: zorro2 id: 2  ip: [localhost]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+		statusResult += "name: zorro3 id: 2  ip: [localhost]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+#		statusResult += "name: zorro  id: 1  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+#		statusResult += "name: zorro2 id: 2  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+#		statusResult += "name: zorro3 id: 2  ip: [10.16.5.162]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
 
 	if gameClient:
 		statusResult = "Client:" + "\n"
@@ -65,9 +68,16 @@ def status():
 		statusResult += "-----------------------------------------" + "\n"
 		statusResult += "Client Status:" + "\n"
 		statusResult += "name: " + "\n"
-		statusResult += "ip: NOTPC1161" + "\n"
+		statusResult += "ip: localhost" + "\n"
 		statusResult += "version: 1.0.0.1" + "\n"
-		statusResult += "name: zorro  entID:65532" + "\n"
+		if port == 31544:
+			statusResult += "name: zorro  entID:65532" + "\n"
+		elif port == 31555:
+			statusResult += "name: zorro2 entID:65531" + "\n"
+		elif port == 31565:
+			statusResult += "name: zorro3 entID:65530" + "\n"
+		else:
+			statusResult += "name: jake  entID:65520" + "\n"
 
 	return str(statusResult)
 
@@ -99,7 +109,8 @@ def jake(params):
 		cmdline = "hmserver.py -client -port=" + clientPort
 		print serverName+cmdline
 		args = shlex.split(cmdline)
-		p = subprocess.Popen(args)
+		print "args=",args
+		p = subprocess.Popen(args, shell=True)
 		resultStr += "NetID " + netID + " client "+ clientPort + "\n"
 
 	return resultStr
