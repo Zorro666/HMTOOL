@@ -13,7 +13,7 @@ class HMGUI(Tkinter.Frame):
 		self.grid()
 		self.createWidgets()
 		self.appTitle = "HM Tool"
-		self.connections = []
+		self.clientConnections = []
 		self.serverConnection = None
 		self.currentConnection = None
 		self.master.bind('<Escape>', self.userQuit)
@@ -37,17 +37,17 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_console.see(Tkinter.END)
 		self.TEXT_console.config(state = Tkinter.DISABLED)
 
-	def setServerName(self, serverName):
-		self.TEXT_serverName.config(state = Tkinter.NORMAL)
-		self.TEXT_serverName.delete(1.0, Tkinter.END)
-		self.TEXT_serverName.insert(Tkinter.END, serverName)
-		self.TEXT_serverName.config(state = Tkinter.DISABLED)
-
 	def setServerIP(self, serverIP):
 		self.TEXT_serverIP.config(state = Tkinter.NORMAL)
 		self.TEXT_serverIP.delete(1.0, Tkinter.END)
 		self.TEXT_serverIP.insert(Tkinter.END, serverIP)
 		self.TEXT_serverIP.config(state = Tkinter.DISABLED)
+
+	def setServerPort(self, serverPort):
+		self.TEXT_serverPort.config(state = Tkinter.NORMAL)
+		self.TEXT_serverPort.delete(1.0, Tkinter.END)
+		self.TEXT_serverPort.insert(Tkinter.END, serverPort)
+		self.TEXT_serverPort.config(state = Tkinter.DISABLED)
 
 	def setServerSelected(self, selected):
 		if selected:
@@ -58,8 +58,8 @@ class HMGUI(Tkinter.Frame):
 			else:
 				fgColour = "blue"
 
-		self.TEXT_serverName.config(fg = fgColour)
 		self.TEXT_serverIP.config(fg = fgColour)
+		self.TEXT_serverPort.config(fg = fgColour)
 		if selected == True:
 			self.setClientSelected(None)
 			self.updateClientsDisplay()
@@ -95,9 +95,7 @@ class HMGUI(Tkinter.Frame):
 		for w in self.TEXT_clientNames:
 			clientName = w.get(1.0, Tkinter.END)
 			clientName = clientName.strip()
-			print "clientName:"+clientName
 			if len(clientName) == 0:
-				print "Empty client name"
 				break
 			index += 1
 
@@ -126,40 +124,60 @@ class HMGUI(Tkinter.Frame):
 	def connectHTTPServer(self):
 		HTTPServerName = self.ENTRY_HTTPServerIP.get()
 		HTTPServerPort = self.ENTRY_HTTPServerPort.get()
+		self.connectToHTTPServer(HTTPServerName, HTTPServerPort)
+
+	def closeClientConnections(self):
+		for con in self.clientConnections:
+			con.close()
+
+		del self.clientConnections
+		self.clientConnections = []
+		del self.clientDetails
+		self.clientDetails = []
+
+	def connectToHTTPServer(self, IP, port):
+		# TODO: don't connect if already connected
+		cd = ["", IP, "", port]
+		if self.isConnected(cd):
+			print "Already connected"
+			return
+
 		connection = hmclient.Connection()
-		result = connection.connectToHTTPServer(HTTPServerName, HTTPServerPort)
+		result = connection.connectToHTTPServer(IP, port)
 		self.currentConnection = None
 
 		if result == False:
 			self.consolePrint("ERROR failed to connect to HTTP server")
+			self.consolePrint("ERROR IP:"+IP+" port:"+port)
 		else:
-			self.connections.append(connection)
 			self.currentConnection = connection
 			self.BUTTON_connectHTTPServer["text"] = "Connected to:" + self.currentConnection.string
-			self.BUTTON_connectHTTPServer["command"] = self.connectHTTPServer
 			self.consolePrint("START #####################################################", noprefix = True)
 			self.consolePrint("Connected to HTTPServer")
 			self.setTitle("Connected to " + self.currentConnection.string)
 
 			if self.currentConnection.isServer():
-				self.setServerName(HTTPServerName)
+				self.closeClientConnections()
+				self.clearClients()
 				result = self.currentConnection.getServerIP()
 				if result[0] == True:
 					print "ServerIP:"+result[1]
 					self.setServerIP(result[1])
+					self.setServerPort(port)
 					self.consolePrint("ServerIP:"+result[1])
 				self.serverConnection = self.currentConnection
-				self.serverInfo = [HTTPServerName, result[1], "", HTTPServerPort]
+				self.serverInfo = [IP, result[1], "", port]
 				self.setServerSelected(True)
 				self.consolePrint("is a server")
 
 			result = self.currentConnection.isClient()
 			if result[0]:
+				self.clientConnections.append(connection)
 				clientName = result[1]
-				clientIP = HTTPServerName
+				clientIP = IP
 				serverBasePort = int(self.serverInfo[3])
-				clientNetID = str(int(HTTPServerPort) - serverBasePort)
-				clientPort = HTTPServerPort
+				clientNetID = str(int(port) - serverBasePort)
+				clientPort = port
 				self.consolePrint("A client: Name:" + clientName +" IP:" + clientIP + " NetID:" + clientNetID + " Port:" + clientPort)
 				self.currentConnection.setDetail(clientName, clientIP, clientNetID, clientPort)
 
@@ -167,7 +185,7 @@ class HMGUI(Tkinter.Frame):
 				for cd in self.clientDetails:
 					# Match on NetID only!
 					if cd[2] == clientNetID:
-						cd[3] = HTTPServerPort
+						cd[3] = port
 						selectedClient = cd
 						break;
 				self.consolePrint(str(selectedClient))
@@ -227,31 +245,58 @@ class HMGUI(Tkinter.Frame):
 		self.clearClients()
 		for cd in self.clientDetails:
 			selected = False
-			connected = False
 			if self.selectedClient != None:
-				print "Selected or not"
-				print "cd[0]:", cd[0], " self.selectedClient[0]:", self.selectedClient[0]
-				print "cd[1]:", cd[1], " self.selectedClient[1]:", self.selectedClient[1]
-				print "cd[2]:", cd[2], " self.selectedClient[2]:", self.selectedClient[2]
-				print "cd[3]:", cd[3], " self.selectedClient[3]:", self.selectedClient[3]
+#				print "Selected or not"
+#				print "cd[0]:", cd[0], " self.selectedClient[0]:", self.selectedClient[0]
+#				print "cd[1]:", cd[1], " self.selectedClient[1]:", self.selectedClient[1]
+#				print "cd[2]:", cd[2], " self.selectedClient[2]:", self.selectedClient[2]
+#				print "cd[3]:", cd[3], " self.selectedClient[3]:", self.selectedClient[3]
 				# Match on name & IP & net ID & port number
 				if cd[0] == self.selectedClient[0] and cd[1] == self.selectedClient[1] and cd[2] == self.selectedClient[2] and cd[3] == self.selectedClient[3]:
 					selected = True
 
-			for con in self.connections:
-				# Match on name & IP & net ID & port number 
-				if con != None:
-					conDetail = con.getDetail()
-					print "Connected or not"
-					print "cd[0]:", cd[0], " conDetail[0]:", conDetail[0]
-					print "cd[1]:", cd[1], " conDetail[1]:", conDetail[1]
-					print "cd[2]:", cd[2], " conDetail[2]:", conDetail[2]
-					print "cd[3]:", cd[3], " conDetail[3]:", conDetail[3]
-					if conDetail[0] == cd[0] and conDetail[1] == cd[1] and conDetail[2] == cd[2] and conDetail[3] == cd[3]:
-							connected = True
-							break
-
+			connected = self.isClientConnected(cd)
 			self.addClientEntry(cd, selected, connected)
+
+	def isConnected(self, cd):
+		conDetail = self.serverInfo
+		print "conDetail:", conDetail
+		print "cd:", cd
+		if conDetail[1] == cd[1] and conDetail[3] == cd[3]:
+				return True
+		for con in self.clientConnections:
+			# Match on IP & port number 
+			if con != None:
+				conDetail = con.getDetail()
+				if conDetail[1] == cd[1] and conDetail[3] == cd[3]:
+					return True
+
+		return False
+
+	def isServerConnected(self, cd):
+		conDetail = self.serverInfo
+		print "conDetail:", conDetail
+		print "cd:", cd
+		if conDetail[1] == cd[1] and conDetail[3] == cd[3]:
+				return True
+
+		return False
+
+	def isClientConnected(self, cd):
+		connected = False
+		for con in self.clientConnections:
+			# Match on name & IP & net ID & port number 
+			if con != None:
+				conDetail = con.getDetail()
+#				print "Connected or not"
+#				print "cd[0]:", cd[0], " conDetail[0]:", conDetail[0]
+#				print "cd[1]:", cd[1], " conDetail[1]:", conDetail[1]
+#				print "cd[2]:", cd[2], " conDetail[2]:", conDetail[2]
+#				print "cd[3]:", cd[3], " conDetail[3]:", conDetail[3]
+				if conDetail[0] == cd[0] and conDetail[1] == cd[1] and conDetail[2] == cd[2] and conDetail[3] == cd[3]:
+						connected = True
+						break
+		return connected
 
 	def getClientIPs(self):
 		if self.testServerConnection("GetClientIPs") == False:
@@ -361,6 +406,67 @@ class HMGUI(Tkinter.Frame):
 	def userQuit(self, event):
 		self.quit()
 
+	def serverClick(self, event):
+		serverIP = str(self.TEXT_serverIP.get(1.0, Tkinter.END).strip())
+		serverPort = str(self.TEXT_serverPort.get(1.0, Tkinter.END).strip())
+		cd = ["", serverIP, "", serverPort]
+		print "serverClick:", cd
+
+		if len(serverIP) == 0:
+			return
+		if len(serverPort) == 0:
+			return
+
+		if self.isServerConnected(cd) == False:
+			print "serverClick not connected"
+			self.connectToHTTPServer(serverIP, serverPort)
+		else:
+			self.setServerSelected(True)
+
+	def clientClick(self, event, i):
+		clientName = str(self.TEXT_clientNames[i].get(1.0, Tkinter.END).strip())
+		clientIP = str(self.TEXT_clientIPs[i].get(1.0, Tkinter.END).strip())
+		clientNetID = str(self.TEXT_clientNetIDs[i].get(1.0, Tkinter.END).strip())
+		clientPort = str(self.TEXT_clientPorts[i].get(1.0, Tkinter.END).strip())
+		cd = [clientName, clientIP, clientNetID, clientPort]
+		print "clientClick[", i, "]", cd
+
+		if len(clientName) == 0:
+			return
+		if len(clientIP) == 0:
+			return
+		if len(clientNetID) == 0:
+			return
+		if len(clientPort) == 0:
+			return
+
+		if self.isClientConnected(cd) == False:
+			print "clientClick not connected"
+			self.connectToHTTPServer(clientIP, clientPort)
+		else:
+			self.setClientSelected(cd)
+			self.updateClientsDisplay()
+
+	def clientNameClick(self, event):
+		w = event.widget
+		i = self.TEXT_clientNames.index(w)
+		self.clientClick(event, i)
+
+	def clientIPClick(self, event):
+		w = event.widget
+		i = self.TEXT_clientIPs.index(w)
+		self.clientClick(event, i)
+
+	def clientNetIDClick(self, event):
+		w = event.widget
+		i = self.TEXT_clientNetIDs.index(w)
+		self.clientClick(event, i)
+
+	def clientPortClick(self, event):
+		w = event.widget
+		i = self.TEXT_clientPorts.index(w)
+		self.clientClick(event, i)
+
 	def createWidgets(self):
 		serverClientBoxWidth = 15
 		serverClientIPBoxWidth = 16
@@ -369,11 +475,11 @@ class HMGUI(Tkinter.Frame):
 
 		curRow = 0
 		curCol = 0
-		self.LABEL_serverName = Tkinter.Label(self, text = "Server Name")
-		self.LABEL_serverName.grid(row = curRow, column = curCol, columnspan = 1)
+		self.LABEL_serverIP = Tkinter.Label(self, text = "Server IP")
+		self.LABEL_serverIP.grid(row = curRow, column = curCol, columnspan = 1)
 		curCol += 1
-		self.LABEL_clientIP = Tkinter.Label(self, text = "Server IP")
-		self.LABEL_clientIP.grid(row = curRow, column = curCol, columnspan = 1)
+		self.LABEL_serverPort = Tkinter.Label(self, text = "Server Port")
+		self.LABEL_serverPort.grid(row = curRow, column = curCol, columnspan = 1)
 		curCol += 1
 
 		curCol += 2
@@ -399,11 +505,13 @@ class HMGUI(Tkinter.Frame):
 
 		curRow += 1
 		curCol = 0
-		self.TEXT_serverName = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientBoxWidth, height = 1, bg = disableBGcolour, fg = disableFGcolour)
-		self.TEXT_serverName.grid(row = curRow, column = curCol, columnspan = 1)
-		curCol += 1
-		self.TEXT_serverIP = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientIPBoxWidth, height = 1, bg = disableBGcolour)
+		self.TEXT_serverIP = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientIPBoxWidth, height = 1, bg = disableBGcolour, fg = disableFGcolour)
 		self.TEXT_serverIP.grid(row = curRow, column = curCol, columnspan = 1)
+		self.TEXT_serverIP.bind('<ButtonRelease-1>', self.serverClick)
+		curCol += 1
+		self.TEXT_serverPort = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientBoxWidth, height = 1, bg = disableBGcolour, fg = disableFGcolour)
+		self.TEXT_serverPort.grid(row = curRow, column = curCol, columnspan = 1)
+		self.TEXT_serverPort.bind('<ButtonRelease-1>', self.serverClick)
 		curCol += 3
 		self.LABEL_command = Tkinter.Label(self, text = "Command")
 		self.LABEL_command.grid(row = curRow, column = curCol, columnspan = 1)
@@ -447,18 +555,22 @@ class HMGUI(Tkinter.Frame):
 			curCol = 0
 			TEXT_clientName = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientBoxWidth, height = 1, bg = disableBGcolour)
 			TEXT_clientName.grid(row = curRow, column = curCol)
+			TEXT_clientName.bind('<ButtonRelease-1>', self.clientNameClick)
 			self.TEXT_clientNames.append(TEXT_clientName)
 			curCol += 1
 			TEXT_clientIP = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientIPBoxWidth, height = 1, bg = disableBGcolour)
 			TEXT_clientIP.grid(row = curRow, column = curCol)
+			TEXT_clientIP.bind('<ButtonRelease-1>', self.clientIPClick)
 			self.TEXT_clientIPs.append(TEXT_clientIP)
 			curCol += 1
 			TEXT_clientNetID = Tkinter.Text(self, state = Tkinter.DISABLED, width = 6, height = 1, bg = disableBGcolour)
 			TEXT_clientNetID.grid(row = curRow, column = curCol)
+			TEXT_clientNetID.bind('<ButtonRelease-1>', self.clientNetIDClick)
 			self.TEXT_clientNetIDs.append(TEXT_clientNetID)
 			curCol += 1
 			TEXT_clientPort = Tkinter.Text(self, state = Tkinter.DISABLED, width = 6, height = 1, bg = disableBGcolour)
 			TEXT_clientPort.grid(row = curRow, column = curCol)
+			TEXT_clientPort.bind('<ButtonRelease-1>', self.clientPortClick)
 			self.TEXT_clientPorts.append(TEXT_clientPort)
 			curCol += 1
 
