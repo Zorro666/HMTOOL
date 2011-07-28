@@ -13,6 +13,19 @@ class Connection():
 		self.port = ""
 		self.connection = xmlrpcclient.XMLRPCClient(self.host, self.port)
 		self.clientDetails = []
+		self.detail = ["", "", "", ""]
+
+	def getHost(self):
+		return self.host
+
+	def getPort(self):
+		return self.port
+
+	def getDetail(self):
+		return self.detail
+
+	def setDetail(self, name, IP, netID, port):
+		self.detail = [name, IP, netID, port]
 
 	def connectToHTTPServer(self, host, port):
 		hostAddress = host
@@ -55,7 +68,7 @@ class Connection():
 
 				if l == "":
 					parsedOK = False
-	#name: zorro  id: 1  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5
+				#name: zorro  id: 1  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5
 				if parsedOK:
 					parsedOK = False
 					nameStart = l.find("name:")
@@ -74,7 +87,7 @@ class Connection():
 							if pingStart != -1:
 								ipInfo = l[ipStart+len("ip:"):pingStart]
 								ipInfo = ipInfo.strip()
-	#ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146
+								#ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146
 								ipNumStart = ipInfo.find("[")
 								if ipNumStart != -1:
 									ipNumEnd = ipInfo.find("]")
@@ -94,7 +107,7 @@ class Connection():
 
 		self.clientDetails = []
 		for ci in clientInfos:
-# Name, IP, NetID, port
+			# Name, IP, NetID, port
 			cd = [ci[0], ci[1], "", ""]
 			self.clientDetails.append(cd)
 
@@ -103,7 +116,7 @@ class Connection():
 		info = ""
 		for ci in clientInfos:
 			infoStr = "Client:'"+ci[0]+"' IP:"+ci[1]
-			print infoStr
+			#print infoStr
 			info += infoStr
 			info += "\n"
 		return [True, clientInfos]
@@ -151,14 +164,14 @@ class Connection():
 					clientList.append(ci)
 
 		for ci in clientList:
-# Name, IP, NetID, port
+			# Name, IP, NetID, port
 			for cd in self.clientDetails:
 				if cd[0] == ci[0]:
 					cd[2] = ci[1]
 					break
 			
-		for ci in clientList:
-			print "Name:", ci[0], " NetID:",ci[1]
+#		for ci in clientList:
+#			print "Name:", ci[0], " NetID:",ci[1]
 
 		self.dumpClientDetails()
 
@@ -196,8 +209,8 @@ class Connection():
 
 		xml_start = result.find("<HM_GameState")
 		xml_end = result.find("</HM_GameState")
-		print "xml_start=", xml_start
-		print "xml_end=", xml_end
+#		print "xml_start=", xml_start
+#		print "xml_end=", xml_end
 		xml_data = result[xml_start:xml_end+len("</HM_GameState>")]
 
 		return [True, xml_data]
@@ -221,10 +234,25 @@ class Connection():
 			print "Error during status"
 			return False
 		result = rpc_result[1]
+		clientName = ""
+		isClient = False
 		for l in result.splitlines():
 				if l == "Client Status:":
-					return True;
-		return False
+					isClient = True
+				#name: zorro  entID:65532
+				if isClient:
+					nameStart = l.find("name:")
+					if nameStart == 0:
+						nameEnd = l.find("entID:")
+#						print "nameStart:", nameStart
+#						print "nameEnd:", nameEnd
+						if nameEnd > nameStart:
+							name = l[nameStart+len("name:"):nameEnd]
+#							print "name found:", name
+							clientName = name.strip()
+							break
+
+		return [isClient, clientName]
 
 def runTest():
 	connection = Connection()
