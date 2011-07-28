@@ -30,6 +30,9 @@ class XMLRPCClient():
 		self.proxy = httplib.HTTPConnection(self.host, self.port);
 		self.proxy.set_debuglevel(self.serverDebug)
 
+	def close(self):
+		self.proxy.close()
+
 	def xmlrpc(self, function, params = ""):
 		postBody = "<?xml version='1.0'?>\n"
 		postBody += "<methodCall>\n"
