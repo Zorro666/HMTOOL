@@ -1,18 +1,15 @@
-hmgui: colour client display and put in predicted port number, black not connected, blue connected but not selected, red = selected
-hmclient: connect to client IP, port = serverPort + netID (client), port = serverPort - netID (shadow client)
-hmgui: Client fill in port
+hmgui: "Jake Test" : button: server connect, get client info + spawn clients from client info
+hmgui: select between different connections somehow
+hmgui: button to recompute client & status connection status
 
 hmclient: get hm game state from clients & server - save them 
-hmclient: parse hm game state and compare it - output difference
 
-hmgui: colour current connection in red
-hmgui: select between different connections somehow
+hmclient: parse hm game state and compare it - output difference
 
 GAME: server spawns HTTP servers on clients
 server gives names, IPs -> client
 connect to clients one by one
 
-test client by name (status) + port from netID (predicted)
 
 #####################################
 SERVER STATUS OUTPUT
