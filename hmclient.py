@@ -48,6 +48,9 @@ class Connection():
 		ok = result[0]
 		return ok
 
+	def close(self):
+			self.connection.close()
+
 	def sendConsoleCommand(self, command, params = ""):
 		rpc_result = self.connection.sendConsoleCommand(command, params)
 		return rpc_result
