@@ -1,6 +1,7 @@
-hmgui: "Jake Test" : button: server connect, get client info + spawn clients from client info
-hmgui: select between different connections somehow
 hmgui: button to recompute client & status connection status
+
+hmgui: "Server Connect" button : server connect + get client info
+hmgui: "Jake Test" : "Server Connect" button actions + spawn clients from client info
 
 hmclient: get hm game state from clients & server - save them 
 
@@ -8,8 +9,6 @@ hmclient: parse hm game state and compare it - output difference
 
 GAME: server spawns HTTP servers on clients
 server gives names, IPs -> client
-connect to clients one by one
-
 
 #####################################
 SERVER STATUS OUTPUT
