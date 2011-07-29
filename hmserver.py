@@ -5,6 +5,7 @@ import xmlrpclib
 import SimpleXMLRPCServer
 import shlex
 import subprocess
+import platform
 
 debug = 0
 gameServer = 1
@@ -110,8 +111,10 @@ def jake(params):
 		print serverName+cmdline
 		args = shlex.split(cmdline)
 		print "args=",args
-#		p = subprocess.Popen(args, shell=True)
-		p = subprocess.Popen(args)
+		if platform.system() == 'Windows':
+			p = subprocess.Popen(args, shell=True)
+		else:
+			p = subprocess.Popen(args)
 		resultStr += "NetID " + netID + " client "+ clientPort + "\n"
 
 	return resultStr
