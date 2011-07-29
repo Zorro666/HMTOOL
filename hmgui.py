@@ -488,8 +488,25 @@ class HMGUI(Tkinter.Frame):
 		if self.currentConnection == self.serverConnection:
 			prefix = "Server"
 		else:
-			# TODO: convert this to the client name
-			prefix = self.selectedClient[0]
+			# Get the right client name
+			prefix = "Client"
+			conIP = self.currentConnection.getIP()
+			conPort = self.currentConnection.getPort()
+			for i in range(16):
+				clientName = str(self.TEXT_clientNames[i].get(1.0, Tkinter.END).strip())
+				clientIP = str(self.TEXT_clientIPs[i].get(1.0, Tkinter.END).strip())
+				clientNetID = str(self.TEXT_clientNetIDs[i].get(1.0, Tkinter.END).strip())
+				clientPort = str(self.TEXT_clientPorts[i].get(1.0, Tkinter.END).strip())
+
+				if len(clientName) == 0:
+					continue
+				if len(clientIP) == 0:
+					continue
+				if len(clientPort) == 0:
+					continue
+
+				if conIP == clientIP and conPort == clientPort:
+					prefix = clientName
 
 		rpc_result = self.currentConnection.getGameState(saveToFile=True, filePrefix=prefix)
 		success = rpc_result[0]
@@ -525,7 +542,7 @@ class HMGUI(Tkinter.Frame):
 
 		self.updateClientsDisplay()
 
-	def jakeTest(self):
+	def saveGameStates(self):
 		self.connectHTTPServer()
 		self.getClientDetails()
 
@@ -538,6 +555,17 @@ class HMGUI(Tkinter.Frame):
 		# Try to connect to them
 		for i in range(16):
 			self.clientClick(None, i)
+
+		# Output game state for all the connections
+		oldConnection = self.currentConnection
+		self.currentConnection = self.serverConnection
+		self.getGameState()
+		for con in self.clientConnections:
+			if con != None:
+				if con.valid == True:
+					self.currentConnection = con
+					self.getGameState()
+		self.currentConnection = oldConnection
 
 	def returnKey(self, event):
 		self.sendCommand()
@@ -742,19 +770,19 @@ class HMGUI(Tkinter.Frame):
 		curCol += 1
 		self.BUTTON_getGameState = Tkinter.Button(self, text = "Output Game State", command = self.getGameState)
 		self.BUTTON_getGameState.grid(row = curRow, column = curCol, columnspan = 2, sticky="w")
-		curCol += 3
-		self.BUTTON_getClientList = Tkinter.Button(self, text = "Server Get Client List", command = self.getClientList)
-		self.BUTTON_getClientList.grid(row = curRow, column = curCol, columnspan=2, sticky="w")
 		curCol += 2
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Save Game States", command = self.saveGameStates)
+		self.BUTTON_getIPs.grid(row = curRow, column = curCol, columnspan=2, sticky="w")
+		curCol += 2
+		self.BUTTON_getClientList = Tkinter.Button(self, text = "Server Get Client List", command = self.getClientList)
+		self.BUTTON_getClientList.grid(row = curRow, column = curCol, columnspan=1, sticky="w")
+		curCol += 1
 		self.BUTTON_getIPs = Tkinter.Button(self, text = "Server Get Client IPs", command = self.getClientIPs)
 		self.BUTTON_getIPs.grid(row = curRow, column = curCol, columnspan=1,sticky="w")
 		curCol += 1
 		self.BUTTON_getIPs = Tkinter.Button(self, text = "Server Get Client Details", command = self.getClientDetails)
 		self.BUTTON_getIPs.grid(row = curRow, column = curCol, columnspan=2, sticky="w")
 		curCol += 2
-		self.BUTTON_getIPs = Tkinter.Button(self, text = "Server Jake Test", command = self.jakeTest)
-		self.BUTTON_getIPs.grid(row = curRow, column = curCol, sticky="w")
-		curCol += 1
 
 		curRow += 1
 		curCol = 0
