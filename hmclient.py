@@ -2,6 +2,7 @@
 
 import xmlrpcclient
 import xml.etree.ElementTree
+import datetime
 import socket
 import sys
 
@@ -232,9 +233,24 @@ class Connection():
 			if gameStateXML.tag != "HM_GameState":
 				print "ERROR"+gameStateXML.tag
 			else:
-				filename = "GameState_" + filePrefix + "_" + self.host + "_" + self.port + ".xml"
-				xmlWrapper = xml.etree.ElementTree.ElementTree(gameStateXML)
-				xmlWrapper.write(filename)
+				now = datetime.datetime.now()
+				nowString = now.strftime("%Y_%m_%d_%H_%M")
+				print "now=", str(now)
+				print "nowString =", nowString
+				filename = "GameState_"
+ 				filename += nowString
+				filename += "_" 
+ 				filename += filePrefix 
+				filename += "_" 
+				filename += self.host 
+				filename += "_" 
+				filename += self.port 
+				filename += ".xml"
+				xmlOutput = "<?xml version='1.0' ?>" + "\n"
+				xmlOutput += xml.etree.ElementTree.tostring(gameStateXML)
+				f = open(filename, "w")
+				f.write(xmlOutput)
+				f.close()
 				print "Save Game State XML output to:", filename
 
 		return [True, xml_data]
