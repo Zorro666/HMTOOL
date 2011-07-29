@@ -18,6 +18,9 @@ class Connection():
 	def getHost(self):
 		return self.host
 
+	def getIP(self):
+		return self.host
+
 	def getPort(self):
 		return self.port
 
@@ -48,8 +51,19 @@ class Connection():
 		ok = result[0]
 		return ok
 
+	def testConnection(self):
+		result = self.connection.testConnection()
+		ok = result[0]
+		return ok
+
 	def close(self):
-			self.connection.close()
+		self.connection.close()
+		self.valid = False
+		self.string = ""
+		self.host = ""
+		self.port = ""
+		self.clientDetails = []
+		self.detail = ["", "", "", ""]
 
 	def sendConsoleCommand(self, command, params = ""):
 		rpc_result = self.connection.sendConsoleCommand(command, params)
