@@ -482,10 +482,16 @@ class HMGUI(Tkinter.Frame):
 
 
 	def getGameState(self):
-		if self.testServerConnection("GetGameState") == False:
+		if self.testConnection("GetGameState") == False:
 			return
 
-		rpc_result = self.serverConnection.getGameState()
+		if self.currentConnection == self.serverConnection:
+			prefix = "Server"
+		else:
+			# TODO: convert this to the client name
+			prefix = self.selectedClient[0]
+
+		rpc_result = self.currentConnection.getGameState(saveToFile=True, filePrefix=prefix)
 		success = rpc_result[0]
 		result = rpc_result[1]
 		self.consolePrint("START #####################################################", noprefix=True)
