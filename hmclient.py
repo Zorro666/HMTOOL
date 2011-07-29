@@ -216,7 +216,7 @@ class Connection():
 
 		return [True, self.clientDetails]
 
-	def getGameState(self):
+	def getGameState(self, saveToFile = False, filePrefix = ""):
 		rpc_result = self.sendConsoleCommand("g_hm_dump_gamestate")
 		success = rpc_result[0]
 		if success == False:
@@ -226,9 +226,16 @@ class Connection():
 
 		xml_start = result.find("<HM_GameState")
 		xml_end = result.find("</HM_GameState")
-#		print "xml_start=", xml_start
-#		print "xml_end=", xml_end
 		xml_data = result[xml_start:xml_end+len("</HM_GameState>")]
+		if saveToFile == True:
+			gameStateXML = xml.etree.ElementTree.XML(xml_data)
+			if gameStateXML.tag != "HM_GameState":
+				print "ERROR"+gameStateXML.tag
+			else:
+				filename = "GameState_" + filePrefix + "_" + self.host + "_" + self.port + ".xml"
+				xmlWrapper = xml.etree.ElementTree.ElementTree(gameStateXML)
+				xmlWrapper.write(filename)
+				print "Save Game State XML output to:", filename
 
 		return [True, xml_data]
 
