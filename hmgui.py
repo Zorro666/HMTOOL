@@ -23,6 +23,8 @@ class HMGUI(Tkinter.Frame):
 
 	def setTitle(self, title):
 		fullTitle = self.appTitle + ":" + title
+		fullTitle += " ServerIP:"+self.serverInfo[1]
+		fullTitle += " ServerPort:"+self.serverInfo[3]
 		self.master.title(fullTitle)
 
 	def consolePrint(self, output, noprefix=False):
@@ -122,6 +124,10 @@ class HMGUI(Tkinter.Frame):
 		if clientDetail != None:
 			self.setServerSelected(False)
 
+	def serverConnect(self):
+		self.connectHTTPServer()
+		self.getClientDetails()
+
 	def connectHTTPServer(self):
 		HTTPServerName = self.ENTRY_HTTPServerIP.get()
 		HTTPServerPort = self.ENTRY_HTTPServerPort.get()
@@ -154,7 +160,6 @@ class HMGUI(Tkinter.Frame):
 			self.BUTTON_connectHTTPServer["text"] = "Connected to:" + self.currentConnection.string
 			self.consolePrint("START #####################################################", noprefix = True)
 			self.consolePrint("Connected to HTTPServer")
-			self.setTitle("Connected to " + self.currentConnection.string)
 
 			if self.currentConnection.isServer():
 				self.closeClientConnections()
@@ -169,6 +174,7 @@ class HMGUI(Tkinter.Frame):
 				self.serverInfo = [IP, result[1], "", port]
 				self.setServerSelected(True)
 				self.consolePrint("is a server")
+				self.setTitle("Connected to a server " + self.currentConnection.string)
 
 			result = self.currentConnection.isClient()
 			if result[0]:
@@ -180,6 +186,7 @@ class HMGUI(Tkinter.Frame):
 				clientPort = port
 				self.consolePrint("A client: Name:" + clientName +" IP:" + clientIP + " NetID:" + clientNetID + " Port:" + clientPort)
 				self.currentConnection.setDetail(clientName, clientIP, clientNetID, clientPort)
+				self.setTitle("Connected to a client " + self.currentConnection.string)
 
 				selectedClient = None
 				for cd in self.clientDetails:
@@ -199,7 +206,25 @@ class HMGUI(Tkinter.Frame):
 		commandParamsList = commandParams.split()
 		command = commandParamsList.pop(0)
 		params = " ".join(commandParamsList)
+		self.consolePrint("#### sendCommand " + command + " " + params + " #####", noprefix = True)
 		self.sendCommandInternal(command, params)
+
+	def broadcastCommand(self):
+		commandParams = self.ENTRY_command.get()
+		commandParamsList = commandParams.split()
+		command = commandParamsList.pop(0)
+		params = " ".join(commandParamsList)
+		self.consolePrint("#### broadcastCommand " + command + " " + params + " #####", noprefix = True)
+
+		oldCurrent = self.currentConnection
+
+		self.currentConnection = self.serverConnection
+		self.sendCommandInternal(command, params)
+		for con in self.clientConnections:
+			self.currentConnection = con
+			self.sendCommandInternal(command, params)
+
+		self.currentConnection = oldCurrent
 
 	def sendCommandInternal(self, command, params):
 		if self.testConnection(command) == False:
@@ -495,10 +520,18 @@ class HMGUI(Tkinter.Frame):
 		self.updateClientsDisplay()
 
 	def jakeTest(self):
+		self.connectHTTPServer()
+		self.getClientDetails()
+
+		# Spawn client HTTP servers
 		oldConnection = self.currentConnection
 		self.currentConnection = self.serverConnection
 		self.sendCommandInternal("jake", "129 140 150")
 		self.currentConnection = oldConnection
+
+		# Try to connect to them
+		for i in range(16):
+			self.clientClick(None, i)
 
 	def returnKey(self, event):
 		self.sendCommand()
@@ -588,26 +621,30 @@ class HMGUI(Tkinter.Frame):
 		curCol += 1
 		self.LABEL_serverPort = Tkinter.Label(self, text = "Server Port")
 		self.LABEL_serverPort.grid(row = curRow, column = curCol, columnspan = 1)
-		curCol += 3
+		curCol += 1
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Server Connect", command = self.serverConnect)
+		self.BUTTON_getIPs.grid(row = curRow, column = curCol, columnspan = 2)
+		curCol += 1
+		curCol += 1
 		self.LABEL_HTTPServerIP = Tkinter.Label(self, text = "HTTP Server IP")
-		self.LABEL_HTTPServerIP.grid(row = curRow, column = curCol, columnspan = 1)
+		self.LABEL_HTTPServerIP.grid(row = curRow, column = curCol, columnspan = 1, sticky="e")
 		curCol += 1
 		self.ENTRY_HTTPServerIP = Tkinter.Entry(self)
 		self.ENTRY_HTTPServerIP.insert(0, "localhost")
-		self.ENTRY_HTTPServerIP.grid(row = curRow, column = curCol, columnspan = 1)
+		self.ENTRY_HTTPServerIP.grid(row = curRow, column = curCol, columnspan = 1, sticky="w")
 		curCol += 1
 
 		self.LABEL_HTTPServerPort = Tkinter.Label(self, text = "HTTP Server Port")
-		self.LABEL_HTTPServerPort.grid(row = curRow, column = curCol)
+		self.LABEL_HTTPServerPort.grid(row = curRow, column = curCol, sticky="e")
 		curCol += 1
 		self.ENTRY_HTTPServerPort = Tkinter.Entry(self, width = 7)
 		self.ENTRY_HTTPServerPort.insert(0, "31415")
-		self.ENTRY_HTTPServerPort.grid(row = curRow, column = curCol)
+		self.ENTRY_HTTPServerPort.grid(row = curRow, column = curCol, sticky="w")
 		curCol += 1
 
 		self.BUTTON_connectHTTPServer = Tkinter.Button(self, text = "Connect HTTP Server", command = self.connectHTTPServer)
-		self.BUTTON_connectHTTPServer.grid(row = curRow, column = curCol)
-		curCol += 1
+		self.BUTTON_connectHTTPServer.grid(row = curRow, column = curCol, columnspan=2, sticky="w")
+		curCol += 2
 
 		curRow += 1
 		curCol = 0
@@ -623,14 +660,17 @@ class HMGUI(Tkinter.Frame):
 		self.BUTTON_checkConnections.grid(row = curRow, column = curCol, columnspan = 2)
 		curCol += 2
 		self.LABEL_command = Tkinter.Label(self, text = "Command")
-		self.LABEL_command.grid(row = curRow, column = curCol, columnspan = 1)
+		self.LABEL_command.grid(row = curRow, column = curCol, columnspan = 1, sticky="e")
 		curCol += 1
 		self.ENTRY_command = Tkinter.Entry(self, width = 60)
 		self.ENTRY_command.insert(0, "")
-		self.ENTRY_command.grid(row = curRow, column = curCol, columnspan = 3)
+		self.ENTRY_command.grid(row = curRow, column = curCol, columnspan = 3, sticky="w")
 		self.ENTRY_command.bind('<Return>', self.returnKey)
 		curCol += 3
-		self.BUTTON_quit = Tkinter.Button(self, text = "Send Command", command = self.sendCommand)
+		self.BUTTON_quit = Tkinter.Button(self, text = "Send", command = self.sendCommand)
+		self.BUTTON_quit.grid(row = curRow, column = curCol)
+		curCol += 1
+		self.BUTTON_quit = Tkinter.Button(self, text = "Broadcast", command = self.broadcastCommand)
 		self.BUTTON_quit.grid(row = curRow, column = curCol)
 		curCol += 1
 
@@ -685,7 +725,7 @@ class HMGUI(Tkinter.Frame):
 
 		curRow = textSavedRow
 		curCol = 4
-		self.TEXT_console = Tkinter.Text(self, state = Tkinter.DISABLED, width = 100, height = 24, bg = disableBGcolour)
+		self.TEXT_console = Tkinter.Text(self, state = Tkinter.DISABLED, width = 110, height = 24, bg = disableBGcolour)
 		self.TEXT_console.grid(row = curRow, column = curCol, rowspan = 20, columnspan = 7)
 		curCol += 7
 
@@ -695,19 +735,19 @@ class HMGUI(Tkinter.Frame):
 		self.BUTTON_quit.grid(row = curRow, column = curCol, columnspan = 1)
 		curCol += 1
 		self.BUTTON_getGameState = Tkinter.Button(self, text = "Output Game State", command = self.getGameState)
-		self.BUTTON_getGameState.grid(row = curRow, column = curCol, columnspan = 3)
+		self.BUTTON_getGameState.grid(row = curRow, column = curCol, columnspan = 2, sticky="w")
 		curCol += 3
-		self.BUTTON_getClientList = Tkinter.Button(self, text = "Get Client List", command = self.getClientList)
-		self.BUTTON_getClientList.grid(row = curRow, column = curCol)
+		self.BUTTON_getClientList = Tkinter.Button(self, text = "Server Get Client List", command = self.getClientList)
+		self.BUTTON_getClientList.grid(row = curRow, column = curCol, columnspan=2, sticky="w")
+		curCol += 2
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Server Get Client IPs", command = self.getClientIPs)
+		self.BUTTON_getIPs.grid(row = curRow, column = curCol, columnspan=1,sticky="w")
 		curCol += 1
-		self.BUTTON_getIPs = Tkinter.Button(self, text = "Get Client IPs", command = self.getClientIPs)
-		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
-		curCol += 1
-		self.BUTTON_getIPs = Tkinter.Button(self, text = "Get Client Details", command = self.getClientDetails)
-		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
-		curCol += 1
-		self.BUTTON_getIPs = Tkinter.Button(self, text = "Jake Test", command = self.jakeTest)
-		self.BUTTON_getIPs.grid(row = curRow, column = curCol)
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Server Get Client Details", command = self.getClientDetails)
+		self.BUTTON_getIPs.grid(row = curRow, column = curCol, columnspan=2, sticky="w")
+		curCol += 2
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Server Jake Test", command = self.jakeTest)
+		self.BUTTON_getIPs.grid(row = curRow, column = curCol, sticky="w")
 		curCol += 1
 
 		curRow += 1
