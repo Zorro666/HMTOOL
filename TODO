@@ -1,5 +1,3 @@
-hmclient: get hm game state from clients & server - save them 
-
 hmclient: parse hm game state and compare it - output difference
 
 GAME: server spawns HTTP servers on clients
