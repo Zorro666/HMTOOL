@@ -2,3 +2,4 @@
 *.pyc
 Client*.xml
 Server*.xml
+GameState*.xml
