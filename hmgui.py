@@ -63,6 +63,7 @@ class HMGUI(Tkinter.Frame):
 		if selected == True:
 			self.setClientSelected(None)
 			self.updateClientsDisplay()
+			self.currentConnection = self.serverConnection
 
 	def clearClients(self):
 		for w in self.TEXT_clientNames:
@@ -136,7 +137,6 @@ class HMGUI(Tkinter.Frame):
 		self.clientDetails = []
 
 	def connectToHTTPServer(self, IP, port):
-		# TODO: don't connect if already connected
 		cd = ["", IP, "", port]
 		if self.isConnected(cd):
 			print "Already connected"
@@ -260,6 +260,9 @@ class HMGUI(Tkinter.Frame):
 
 	def isConnected(self, cd):
 		conDetail = self.serverInfo
+		if conDetail == None:
+			return False
+
 		print "conDetail:", conDetail
 		print "cd:", cd
 		if conDetail[1] == cd[1] and conDetail[3] == cd[3]:
@@ -275,6 +278,9 @@ class HMGUI(Tkinter.Frame):
 
 	def isServerConnected(self, cd):
 		conDetail = self.serverInfo
+		if conDetail == None:
+			return False
+
 		print "conDetail:", conDetail
 		print "cd:", cd
 		if conDetail[1] == cd[1] and conDetail[3] == cd[3]:
@@ -355,6 +361,100 @@ class HMGUI(Tkinter.Frame):
 
 		return True
 
+	def checkServerConnection(self):
+		oldConnection = self.currentConnection
+		self.currentConnection = self.serverConnection
+		connected = True
+		if self.testConnection("checkServerConnections") == False:
+			print "currentConnection: testConnection is false"
+			connected = False
+		elif self.serverConnection.testConnection() == False:
+				print "serverConnection: testConnection is false"
+				connected = False
+
+		if connected == False:
+			if oldConnection == self.serverConnection:
+				if oldConnection != None:
+					oldConnection.close()
+					oldConnection = None
+
+			if self.serverConnection != None:
+				self.serverConnection.close()
+				self.serverConnection = None
+				self.serverInfo = None
+
+		self.currentConnection = oldConnection
+		return True
+
+	def checkOneClientConnection(self, IP, port):
+		for con in self.clientConnections:
+			if con != None:
+				conIP = con.getIP()
+				conPort = con.getPort()
+				if conIP == IP and conPort == port:
+					print "checkOneClient found it"
+					if con.testConnection() == True:
+						print "checkOneClient found it: connected"
+						return True
+
+		print "checkOneClient False"
+		return False;
+
+	def checkConnections(self):
+		print "checkConnections"
+		selected = False
+		print "curIP", self.currentConnection.getIP()
+		print "curPort", self.currentConnection.getPort()
+		print "serverConIP", self.serverConnection.getIP()
+		print "serverCoPnort", self.serverConnection.getPort()
+		if self.currentConnection == self.serverConnection:
+			print "Server is selected"
+			selected = True
+
+		connected = self.checkServerConnection()
+		if connected == False:
+			selected = False
+
+		self.setServerSelected(selected)
+
+		for i in range(16):
+			clientName = str(self.TEXT_clientNames[i].get(1.0, Tkinter.END).strip())
+			clientIP = str(self.TEXT_clientIPs[i].get(1.0, Tkinter.END).strip())
+			clientNetID = str(self.TEXT_clientNetIDs[i].get(1.0, Tkinter.END).strip())
+			clientPort = str(self.TEXT_clientPorts[i].get(1.0, Tkinter.END).strip())
+			cd = [clientName, clientIP, clientNetID, clientPort]
+
+			if len(clientName) == 0:
+				continue
+			if len(clientIP) == 0:
+				continue
+			if len(clientNetID) == 0:
+				continue
+			if len(clientPort) == 0:
+				continue
+
+			print "checkConnections:[", i, "]", cd
+			if self.isClientConnected(cd) == False:
+				print "checkConnections client not connected"
+			if self.checkOneClientConnection(clientIP, clientPort) == False:
+				print "checkConnections client test connection is false"
+				for con in self.clientConnections:
+					if con != None:
+						conIP = con.getIP()
+						conPort = con.getPort()
+						if conIP == clientIP and conPort == clientPort:
+							con.close()
+							self.clientConnections.remove(con)
+						if self.currentConnection.getIP() == clientIP and self.currentConnection.getPort == clientPort:
+							print "Closing current connection"
+							self.currentConnection.close()
+							self.currentConnection = None
+						if self.selectedClient != None:
+							if self.selectedClient[1] == clientIP and self.selectedClient[3] == clientPort:
+								print "Selected client not connected: resetting"
+								self.setClientSelected(None)
+			self.updateClientsDisplay()
+
 
 	def getGameState(self):
 		if self.testServerConnection("GetGameState") == False:
@@ -418,10 +518,13 @@ class HMGUI(Tkinter.Frame):
 			return
 
 		if self.isServerConnected(cd) == False:
-			print "serverClick not connected"
+			print "serverClick not connected : reconnecting"
 			self.connectToHTTPServer(serverIP, serverPort)
 		else:
 			self.setServerSelected(True)
+
+		if self.checkServerConnection() == False:
+			self.setServerSelected(False)
 
 	def clientClick(self, event, i):
 		clientName = str(self.TEXT_clientNames[i].get(1.0, Tkinter.END).strip())
@@ -446,6 +549,11 @@ class HMGUI(Tkinter.Frame):
 		else:
 			self.setClientSelected(cd)
 			self.updateClientsDisplay()
+			for con in self.clientConnections:
+				conIP = con.getIP()
+				conPort = con.getPort()
+				if conIP == clientIP and conPort == clientPort:
+					self.currentConnection = con;
 
 	def clientNameClick(self, event):
 		w = event.widget
@@ -480,9 +588,7 @@ class HMGUI(Tkinter.Frame):
 		curCol += 1
 		self.LABEL_serverPort = Tkinter.Label(self, text = "Server Port")
 		self.LABEL_serverPort.grid(row = curRow, column = curCol, columnspan = 1)
-		curCol += 1
-
-		curCol += 2
+		curCol += 3
 		self.LABEL_HTTPServerIP = Tkinter.Label(self, text = "HTTP Server IP")
 		self.LABEL_HTTPServerIP.grid(row = curRow, column = curCol, columnspan = 1)
 		curCol += 1
@@ -512,7 +618,10 @@ class HMGUI(Tkinter.Frame):
 		self.TEXT_serverPort = Tkinter.Text(self, state = Tkinter.DISABLED, width = serverClientBoxWidth, height = 1, bg = disableBGcolour, fg = disableFGcolour)
 		self.TEXT_serverPort.grid(row = curRow, column = curCol, columnspan = 1)
 		self.TEXT_serverPort.bind('<ButtonRelease-1>', self.serverClick)
-		curCol += 3
+		curCol += 1
+		self.BUTTON_checkConnections = Tkinter.Button(self, text = "Check Connections", command = self.checkConnections)
+		self.BUTTON_checkConnections.grid(row = curRow, column = curCol, columnspan = 2)
+		curCol += 2
 		self.LABEL_command = Tkinter.Label(self, text = "Command")
 		self.LABEL_command.grid(row = curRow, column = curCol, columnspan = 1)
 		curCol += 1
@@ -576,7 +685,7 @@ class HMGUI(Tkinter.Frame):
 
 		curRow = textSavedRow
 		curCol = 4
-		self.TEXT_console = Tkinter.Text(self, state = Tkinter.DISABLED, width = 100, height = 18, bg = disableBGcolour)
+		self.TEXT_console = Tkinter.Text(self, state = Tkinter.DISABLED, width = 100, height = 24, bg = disableBGcolour)
 		self.TEXT_console.grid(row = curRow, column = curCol, rowspan = 20, columnspan = 7)
 		curCol += 7
 
