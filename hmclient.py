@@ -295,14 +295,14 @@ class Connection():
 		return [isClient, clientName]
 
 def runTest():
-	connection = Connection()
-	result = connection.connectToHTTPServer("localhost", 31415)
-	if (connection.valid == False):
+	this = Connection()
+	result = this.connectToHTTPServer("localhost", 31415)
+	if (this.valid == False):
 		print "Can't connect to server:", "localhost", str(31415)
 		sys.exit(-1)
 
-	connection.sendConsoleCommand("test")
-	connection.getClientIPs()
+	this.sendConsoleCommand("test")
+	this.getClientIPs()
 
 if __name__ == '__main__':
 	runTest()
