@@ -1,4 +1,9 @@
+hmparse: load in client XML file
+hmparse: import client XMLs
+hmparse: compare server gamestate data against gamestate data of the clients
+
 hmclient: parse hm game state and compare it - output difference
+hmgui: parse hm game state and compare it - output difference
 
 GAME: test spawning HTTP servers on dedicated clients and hmgui finding them
 GAME: test spawning HTTP servers on local shadow servers and hmgui finding them
