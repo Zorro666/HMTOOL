@@ -254,6 +254,18 @@ class NetActorItem():
 		out += "NetID:" + self.netID
 		return out
 
+	def compare(self, rhs):
+		result = ""
+		if self.netID != rhs.netID:
+			result += "netID is different"
+ 			result += " LHS:"
+			result += self.netID
+ 			result += " RHS:"
+			result += rhs.netID
+			result += "\n"
+			return [False, result]
+		return [True, result]
+
 class NetActorAmmo():
 	def __init__(self):
    	#<b C="100" N="ammo_pack" />
@@ -271,6 +283,26 @@ class NetActorAmmo():
 		out += " Count:" + self.count
 		return out
 
+	def compare(self, rhs):
+		result = ""
+		if self.name != rhs.name:
+			result += "name is different"
+ 			result += " LHS:"
+			result += self.name
+ 			result += " RHS:"
+			result += rhs.name
+			result += "\n"
+			return [False, result]
+		if self.count != rhs.count:
+			result += "count is different"
+ 			result += " LHS:"
+			result += self.count
+ 			result += " RHS:"
+			result += rhs.count
+			result += "\n"
+			return [False, result]
+		return [True, result]
+
 class NetActorAccessory():
 	def __init__(self):
    	# ??????????????????
@@ -284,6 +316,18 @@ class NetActorAccessory():
 		out = ""
 		out += "Name:" + self.name
 		return out
+
+	def compare(self, rhs):
+		result = ""
+		if self.name != rhs.name:
+			result += "name is different"
+ 			result += " LHS:"
+			result += self.name
+ 			result += " RHS:"
+			result += rhs.name
+			result += "\n"
+			return [False, result]
+		return [True, result]
 
 class NetActor():
 	def __init__(self):
@@ -506,7 +550,7 @@ class NetActor():
 			i += 1
 			if res[0] == False:
 				result += "\n"
-				result += "Ammo[" + i + "] is different"
+				result += "Ammo[" + str(i) + "] is different"
 				result += "\n"
 				result += "#### "
 				result += res[1]
@@ -633,8 +677,8 @@ class GameStateInfo():
 
 	def output(self):
 		out = "\n"
-		out += "nickaname:" + self.nickname + "\n"
-		out += "NumNetEntities:" + self.numNetEntities + "\n"
+		out += "nickname:" + self.nickname + "\n"
+		out += "numNetEntities:" + self.numNetEntities + "\n"
 		out += "numNetActors:" + self.numNetActors + "\n"
 		out += "NetEntities" + "\n"
 		for netEntity in self.netEntities:
@@ -648,7 +692,7 @@ class GameStateInfo():
 		return out
 
 	def compare(self, rhs):
-		result = ""
+		result = "Comparing:" + self.nickname + " and " + rhs.nickname
 		if self.numNetEntities != rhs.numNetEntities:
 			result += "\n"
 			result += "NumNetEntiies is different"
@@ -672,7 +716,7 @@ class GameStateInfo():
 					break
 			if netEntityRHS == None:
 				result += "\n"
-				result += "NetEntity not found netID:" + netID
+				result += "LHS NetEntity not found netID:" + netID
 				result += "\n"
 				result += netEntity.output()
 				result += "\n"
@@ -681,7 +725,7 @@ class GameStateInfo():
 			res = netEntity.compare(netEntityRHS)
 			if res[0] == False:
 				result += "\n"
-				result += "NetEntity is different"
+				result += "NetEntity:" + netEntity.name + " and " + netEntityRHS.name + " are different"
 				result += "\n"
 				result += "#### "
 				result += res[1]
@@ -694,10 +738,38 @@ class GameStateInfo():
 				result += netEntityRHS.output()
 				result += "\n"
 				return [False, result]
-#		for netActor in self.netActors:
-#			out += netActor.output()
-#			out += "\n"
-#		out += "\n"
+
+		for netActor in self.netActors:
+			netID = netActor.netID
+			netActorRHS = None
+			for netActorOther in rhs.netActors:
+				if netActorOther.netID == netID:
+					netActorRHS = netActorOther
+					break
+			if netActorRHS == None:
+				result += "\n"
+				result += "LHS NetActor not found netID:" + netID
+				result += "\n"
+				result += netActor.output()
+				result += "\n"
+				return [False, result]
+
+			res = netActor.compare(netActorRHS)
+			if res[0] == False:
+				result += "\n"
+				result += "NetActor:" + netActor.name + " and " + netActorRHS.name + " are different"
+				result += "\n"
+				result += "#### "
+				result += res[1]
+	 			result += self.nickname + " LHS:"
+				result += "\n"
+				result += netActor.output()
+				result += "\n"
+	 			result += rhs.nickname + " RHS:"
+				result += "\n"
+				result += netActorRHS.output()
+				result += "\n"
+				return [False, result]
 			
 		result = self.nickname + " MATCHES " + rhs.nickname
 		return [True, result]
