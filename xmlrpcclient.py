@@ -210,14 +210,12 @@ class XMLRPCClient():
 		return [True, result]
 
 def runTest():
-	proxy = XMLRPCClient()
-	proxy.connect("localhost", 81)
+	this = XMLRPCClient()
+	this.connect("localhost", 81)
 
-	proxy.testConnection(proxy)
-	proxy.authenticate()
-	proxy.testConnection(proxy)
-
-	dumpGameState(proxy)
+	this.testConnection()
+	this.authenticate()
+	this.testConnection()
 
 if __name__ == '__main__':
 	runTest()
