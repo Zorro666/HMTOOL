@@ -1,7 +1,7 @@
 hmclient: parse hm game state and compare it - output difference
 
-GAME: server spawns HTTP servers on clients
-server gives names, IPs -> client
+GAME: test spawning HTTP servers on dedicated clients and hmgui finding them
+GAME: test spawning HTTP servers on local shadow servers and hmgui finding them
 
 #####################################
 SERVER STATUS OUTPUT
