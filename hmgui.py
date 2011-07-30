@@ -2,7 +2,7 @@
 
 import Tkinter 
 import hmclient
-import hmparse
+from hmparse import HMParse
 
 class HMGUI(Tkinter.Frame):
 	def __init__(self, master = None):
@@ -260,7 +260,9 @@ class HMGUI(Tkinter.Frame):
 		self.consolePrint("Result:"+str(success))
 		self.consolePrint(result)
 		for cd in result:
-			clientPort = str(int(self.serverInfo[3]) + int(cd[2]))
+			clientPort = str(0)
+			if len(cd[2]) > 0:
+				clientPort = str(int(self.serverInfo[3]) + int(cd[2]))
 			cd[3] = clientPort
 			self.consolePrint("Name:"+cd[0]+" IP:"+cd[1]+" NetID:"+cd[2]+" Port:"+cd[3])
 		self.consolePrint("END #####################################################", noprefix=True)
@@ -484,7 +486,7 @@ class HMGUI(Tkinter.Frame):
 
 	def getGameState(self):
 		if self.testConnection("GetGameState") == False:
-			return
+			return None
 
 		if self.currentConnection == self.serverConnection:
 			prefix = "Server"
@@ -518,6 +520,8 @@ class HMGUI(Tkinter.Frame):
 		self.consolePrint(result)
 		self.consolePrint("END #####################################################", noprefix=True)
 
+		return result
+
 	def getClientList(self):
 		if self.testServerConnection("GetClientList") == False:
 			return
@@ -543,7 +547,8 @@ class HMGUI(Tkinter.Frame):
 
 		self.updateClientsDisplay()
 
-	def saveGameStates(self):
+	def compareGameStates(self):
+		self.consolePrint("START ################## compareGameStates ###################################", noprefix = True)
 		self.connectHTTPServer()
 		self.getClientDetails()
 
@@ -557,16 +562,37 @@ class HMGUI(Tkinter.Frame):
 		for i in range(16):
 			self.clientClick(None, i)
 
-		# Output game state for all the connections
+		# Output and compare game state for all the connections
 		oldConnection = self.currentConnection
 		self.currentConnection = self.serverConnection
-		self.getGameState()
+		hmparse = HMParse()
+
+		gameStateXMLstring = self.getGameState()
+		hmparse.setServerXML(gameStateXMLstring)
+		hmparse.clearClientXMLs()
+
 		for con in self.clientConnections:
 			if con != None:
 				if con.valid == True:
 					self.currentConnection = con
-					self.getGameState()
+					gameStateXMLstring = self.getGameState()
+					nickname = con.getDetail()[0]
+					if len(nickname) > 0:
+						hmparse.addClientXML(nickname, gameStateXMLstring)
 		self.currentConnection = oldConnection
+
+		res = hmparse.compareServerToAllClients()
+		for nickname in res[1]:
+			compareResult = hmparse.compareServerToClientByNickname(nickname)
+			if compareResult[0] == False:
+				self.consolePrint("###### Compare Server to " + nickname + " ######")
+				self.consolePrint(str(compareResult[1]))
+
+		if res[0] == False:
+			self.consolePrint(str("Server different to clients:") + str(res[1]))
+		else:
+			self.consolePrint("Server identical to clients")
+		self.consolePrint("END ################## compareGameStates ###################################", noprefix = True)
 
 	def returnKey(self, event):
 		self.sendCommand()
@@ -772,7 +798,7 @@ class HMGUI(Tkinter.Frame):
 		self.BUTTON_getGameState = Tkinter.Button(self, text = "Output Game State", command = self.getGameState)
 		self.BUTTON_getGameState.grid(row = curRow, column = curCol, columnspan = 2, sticky="w")
 		curCol += 2
-		self.BUTTON_getIPs = Tkinter.Button(self, text = "Save Game States", command = self.saveGameStates)
+		self.BUTTON_getIPs = Tkinter.Button(self, text = "Compare Game States", command = self.compareGameStates)
 		self.BUTTON_getIPs.grid(row = curRow, column = curCol, columnspan=2, sticky="w")
 		curCol += 2
 		self.BUTTON_getClientList = Tkinter.Button(self, text = "Server Get Client List", command = self.getClientList)
