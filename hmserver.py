@@ -57,11 +57,8 @@ def status():
 		statusResult += " -----------------------------------------" + "\n"
 		statusResult += "Connection Status:" + "\n"
 		statusResult += "name: zorro  id: 1  ip: [localhost]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
-		statusResult += "name: zorro2 id: 2  ip: [localhost]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
-		statusResult += "name: zorro3 id: 2  ip: [localhost]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
-#		statusResult += "name: zorro  id: 1  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
-#		statusResult += "name: zorro2 id: 2  ip: [10.16.5.161]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
-#		statusResult += "name: zorro3 id: 2  ip: [10.16.5.162]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+		statusResult += "name: zorro_2 id: 2  ip: [localhost]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
+		statusResult += "name: zorro_3 id: 2  ip: [localhost]NOTPC1161.INTERN.CRYTEK.DE:63146  ping: 1  state: 3 profile: 5" + "\n"
 
 	if gameClient:
 		statusResult = "Client:" + "\n"
@@ -72,11 +69,11 @@ def status():
 		statusResult += "ip: localhost" + "\n"
 		statusResult += "version: 1.0.0.1" + "\n"
 		if port == 31544:
-			statusResult += "name: zorro  entID:65532" + "\n"
+			statusResult += "name: zorro_2 entID:65532" + "\n"
 		elif port == 31555:
-			statusResult += "name: zorro2 entID:65531" + "\n"
+			statusResult += "name: zorro  entID:65531" + "\n"
 		elif port == 31565:
-			statusResult += "name: zorro3 entID:65530" + "\n"
+			statusResult += "name: zorro_3 entID:65530" + "\n"
 		else:
 			statusResult += "name: jake  entID:65520" + "\n"
 
@@ -86,8 +83,14 @@ def g_hm_dump_gamestate():
 	print serverName+"g_hm_dump_gamestate"
 	if gameServer:
 		fileName = "Server__NOTPC1161.xml"
-	if gameClient:
+	elif gameClient and port == 31544:
+		fileName = "Client_zorro_2_NOTPC1161.xml"
+	elif gameClient and port == 31555:
 		fileName = "Client_zorro_NOTPC1161.xml"
+	elif gameClient and port == 31565:
+		fileName = "Client_zorro_3_NOTPC1161.xml"
+	else:
+		return ""
 	f = open(fileName, 'r')
  
 	gameState = "Command: g_hm_dump_gamestate" + "\n"
