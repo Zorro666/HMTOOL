@@ -60,9 +60,20 @@ class HMParse():
 		return [success, gameStateInfo]
 
 def runTest():
-	this = HMParse()
-	this.loadServerXML("Jake.xml")
-	this.loadServerXML("GameState_2011_07_29_07_09_Server_localhost_31415.xml")
+	thisA = HMParse()
+	thisA.loadServerXML("Jake.xml")
+	thisA.loadServerXML("GameState_2011_07_29_15_41_Server_localhost_31415.xml")
+	gameStateA = thisA.serverGameStateInfo
+
+	thisB = HMParse()
+	thisB.loadServerXML("GameState_2011_07_29_15_41_zorro_2_10.16.5.161_31544.xml")
+	gameStateB = thisB.serverGameStateInfo
+	print ""
+	print "############# Comparing state #####################"
+	print ""
+	res = gameStateA.compare(gameStateB)
+
+	print res[1]
 
 if __name__ == '__main__':
 	runTest()
