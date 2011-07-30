@@ -26,7 +26,10 @@ class HMParse():
 		self.serverXML = None
 		self.clientXMLs = []
 		self.serverGameStateInfo = GameStateInfo()
-		self.clientGameStateInfos = [GameStateInfo()]
+		self.clientGameStateInfos = []
+
+	def clearClientXMLs(self):
+		self.clientGameStateInfos = []
 
 	def loadClientXMLs(self, clientFileNames):
 		self.clientGameStateInfos = []
@@ -99,19 +102,44 @@ class HMParse():
 		success = gameStateInfo.parse(nickname, gameStateXML)
 		return [success, gameStateInfo]
 
-def runTest():
-	thisA = HMParse()
-	thisA.loadServerXML("Jake.xml")
-	thisA.loadServerXML("GameState_2011_07_29_15_41_Server_localhost_31415.xml")
-	gameStateA = thisA.serverGameStateInfo
+	def compareServerToAllClients(self):
+		clientsDifferent = []
+		for clientGameStateInfo in self.clientGameStateInfos:
+			if self.compareServerToClient(clientGameStateInfo) == False:
+				clientsDifferent.append(clientGameStateInfo.nickname)
 
-	thisA.loadClientXMLs(["GameState_2011_07_29_15_41_zorro_2_10.16.5.161_31544.xml"])
-	gameStateB = thisA.clientGameStateInfos[0]
+		if len(clientsDifferent) > 0:
+			return [False, clientsDifferent]
+
+		return [True, clientsDifferent]
+
+	def compareServerToClient(self, clientGameStateInfo):
+		res = self.serverGameStateInfo.compare(clientGameStateInfo)
+		print res[1]
+		return res[0]
+		
+	def compareServerToClientByNickname(self, nickname):
+		for clientGameStateInfo in self.clientGameStateInfos:
+			if clientGameStateInfo.nickname == nickname:
+				res = self.serverGameStateInfo.compare(clientGameStateInfo)
+				return res
+
+		print "ERRRO: Client nickname:", nickname, " not found"
+		return [False, ""]
+
+def runTest():
+	this = HMParse()
+	this.loadServerXML("Jake.xml")
+	this.loadServerXML("GameState_2011_07_29_15_41_Server_localhost_31415.xml")
+	this.loadClientXMLs(["GameState_2011_07_29_15_41_zorro_2_10.16.5.161_31544.xml"])
 	print ""
-	print "############# Comparing state #####################"
+	print "############# Comparing server to all clients #####################"
 	print ""
-	res = gameStateA.compare(gameStateB)
-	print res[1]
+	res = this.compareServerToAllClients()
+	if res[0] == False:
+		print "Server different to clients:", res[1]
+	else:
+		print "Server identical to clients"
 
 if __name__ == '__main__':
 	runTest()
