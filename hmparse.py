@@ -28,13 +28,52 @@ class HMParse():
 		self.serverGameStateInfo = GameStateInfo()
 		self.clientGameStateInfos = [GameStateInfo()]
 
+	def loadClientXMLs(self, clientFileNames):
+		self.clientGameStateInfos = []
+		for clientFileName in clientFileNames:
+			self.loadClientXML(clientFileName)
+
+	def loadClientXML(self, clientFileName):
+		print "loadClientXML:", clientFileName
+		if os.path.isfile(clientFileName) == False:
+			print "file does't exist:", clientFileName
+			return
+		clientXML = xml.etree.ElementTree.parse(clientFileName).getroot()
+		# "GameState_2011_07_29_15_41_zorro_2_10.16.5.161_31544.xml"
+		tokens = clientFileName.split("_")
+		nickname = "Client " + "_".join(tokens[6:-2])
+		print "Tokens:", tokens
+		print "File:", clientFileName, "nickname:", nickname
+		clientXML = xml.etree.ElementTree.parse(clientFileName).getroot()
+		clientXMLstring = xml.etree.ElementTree.tostring(clientXML)
+		self.addClientXML(nickname, clientXMLstring)
+
+	def addClientXML(self, nickname, clientXMLstring):
+		print "addClientXML"
+		clientXML = xml.etree.ElementTree.XML(clientXMLstring)
+		self.parseClientXML(nickname, clientXML)
+
+	def parseClientXML(self, nickname, clientXML):
+		result = self.parseHMGameStateXML(nickname, clientXML)
+		if result[0] == False:
+			print "parseServerXML failed"
+			return
+
+		print "parseClientXML succeeded"
+		self.clientXMLs.append(clientXML)
+		clientGameStateInfo = result[1]
+		self.clientGameStateInfos.append(clientGameStateInfo)
+
+		print clientGameStateInfo.output()
+
 	def loadServerXML(self, serverFileName):
 		print "loadServerXML:", serverFileName
 		if os.path.isfile(serverFileName) == False:
 			print "file does't exist:", serverFileName
 			return
-		self.serverXML = xml.etree.ElementTree.parse(serverFileName).getroot()
-		self.parseServerXML()
+		serverXML = xml.etree.ElementTree.parse(serverFileName).getroot()
+		serverXMLstring = xml.etree.ElementTree.tostring(serverXML)
+		self.setServerXML(serverXMLstring)
 
 	def setServerXML(self, serverXMLstring):
 		print "serServerXML"
@@ -46,6 +85,7 @@ class HMParse():
 		if result[0] == False:
 			print "parseServerXML failed"
 			self.serverXML = None
+			return
 		print "parseServerXML succeeded"
 		self.serverGameStateInfo = result[1]
 		print self.serverGameStateInfo.output()
@@ -65,14 +105,12 @@ def runTest():
 	thisA.loadServerXML("GameState_2011_07_29_15_41_Server_localhost_31415.xml")
 	gameStateA = thisA.serverGameStateInfo
 
-	thisB = HMParse()
-	thisB.loadServerXML("GameState_2011_07_29_15_41_zorro_2_10.16.5.161_31544.xml")
-	gameStateB = thisB.serverGameStateInfo
+	thisA.loadClientXMLs(["GameState_2011_07_29_15_41_zorro_2_10.16.5.161_31544.xml"])
+	gameStateB = thisA.clientGameStateInfos[0]
 	print ""
 	print "############# Comparing state #####################"
 	print ""
 	res = gameStateA.compare(gameStateB)
-
 	print res[1]
 
 if __name__ == '__main__':
