@@ -34,6 +34,18 @@ class NetEntityChildEntity():
 		out += "Name:" + self.name
 		return out
 
+	def compare(self, rhs):
+		result = ""
+		if self.name != rhs.name:
+			result += "name is different"
+ 			result += " LHS:"
+			result += self.name
+ 			result += " RHS:"
+			result += rhs.name
+			result += "\n"
+			return [False, result]
+		return [True, result]
+
 class NetEntity():
 	def __init__(self):
 		#<e AHI="010" C="BasicEntity" CC="1" F="0x0" N="rocket_cin2_4" NI="127" ORI="0.72,-0.19,0.64,0.18" P="" POS="525.0,554.5,40.3">
@@ -50,21 +62,28 @@ class NetEntity():
 		self.orient = [0.0, 0.0, 0.0]
 		self.pos = [0.0, 0.0, 0.0]
 		self.children = []
+		self.posTolerances = [float(0.1), float(0.1), float(1.0)]
+		self.orientTolerances = [float(0.1), float(0.1), float(1.0), float(2.0)]
 
 	def parse(self, netEntityXMLnode):
 		#<e AHI="010" C="BasicEntity" CC="1" F="0x0" N="rocket_cin2_4" NI="127" ORI="0.72,-0.19,0.64,0.18" P="" POS="525.0,554.5,40.3">
 			#<c N="Particle_rocket_d" />
 		#</e>
-		self.active = netEntityXMLnode.get("AHI")
-		self.hidden = netEntityXMLnode.get("AHI")
-		self.invisible = netEntityXMLnode.get("AHI")
+		ahi = netEntityXMLnode.get("AHI")
+		self.active = ahi[0:1]
+		self.hidden = ahi[1:2]
+		self.invisible = ahi[2:3]
 		self.className = netEntityXMLnode.get("C")
 		self.numChildren = netEntityXMLnode.get("CC")
 		self.flags = netEntityXMLnode.get("F")
 		self.name = netEntityXMLnode.get("N")
 		self.netID = netEntityXMLnode.get("NI")
-		self.orient = netEntityXMLnode.get("ORI")
-		self.pos = netEntityXMLnode.get("POS")
+		orient = netEntityXMLnode.get("ORI")
+		orientList = orient.split(",")
+		self.orient = [float(orientList[0]), float(orientList[1]), float(orientList[2]), float(orientList[3])]
+		pos = netEntityXMLnode.get("POS")
+		posList = pos.split(",")
+		self.pos = [float(posList[0]), float(posList[1]), float(posList[2])]
 		self.children = []
 
 		for childNode in netEntityXMLnode:
@@ -85,21 +104,141 @@ class NetEntity():
 	def output(self):
 		out = "NetEntity"
 		out += " Name:" + self.name
-		out += " NetID:" + self.netID
+		out += " NetID:" + str(self.netID)
 		out += " ClassName:" + self.className
-		out += " Active:" + self.active
-		out += " Hidden:" + self.hidden
-		out += " Invisible:" + self.invisible
-		out += " Flags:" + self.flags
-		out += " Orient:" + self.orient
-		out += " Pos:" + self.pos
+		out += " Pos:" + str(self.pos[0]) + ", " + str(self.pos[1]) + ", " + str(self.pos[2])
+		out += " Orient:" + str(self.orient[0]) + ", " + str(self.orient[1]) + ", " + str(self.orient[2]) + ", " + str(self.orient[3])
+		out += " Active:" + str(self.active)
+		out += " Hidden:" + str(self.hidden)
+		out += " Invisible:" + str(self.invisible)
+		out += " Flags:" + str(self.flags)
 		out += "\n"
-		out += " NumChildren:" + self.numChildren
+		out += " NumChildren:" + str(self.numChildren)
 		for child in self.children:
 			out += "\n"
 			out += "  Child "
 			out += child.output()
 		return out
+
+	def compare(self, rhs):
+		result = ""
+		if self.name != rhs.name:
+			result += "name is different"
+ 			result += " LHS:"
+			result += self.name
+ 			result += " RHS:"
+			result += rhs.name
+			result += "\n"
+			return [False, result]
+		if self.netID != rhs.netID:
+			result += "netID is different"
+ 			result += " LHS:"
+			result += self.netID
+ 			result += " RHS:"
+			result += rhs.netID
+			result += "\n"
+			return [False, result]
+		if self.className != rhs.className:
+			result += "className is different"
+ 			result += " LHS:"
+			result += self.className
+ 			result += " RHS:"
+			result += rhs.className
+			result += "\n"
+			return [False, result]
+		if self.active != rhs.active:
+			result += "active is different"
+ 			result += " LHS:"
+			result += self.active
+ 			result += " RHS:"
+			result += rhs.active
+			result += "\n"
+			return [False, result]
+		if self.hidden != rhs.hidden:
+			result += "hidden is different"
+ 			result += " LHS:"
+			result += self.hidden
+ 			result += " RHS:"
+			result += rhs.hidden
+			result += "\n"
+			return [False, result]
+		if self.invisible != rhs.invisible:
+			result += "invisible is different"
+ 			result += " LHS:"
+			result += self.invisible
+ 			result += " RHS:"
+			result += rhs.invisible
+			result += "\n"
+			return [False, result]
+		if self.flags != rhs.flags:
+			result += "flags is different"
+ 			result += " LHS:"
+			result += self.flags
+ 			result += " RHS:"
+			result += rhs.flags
+			result += "\n"
+			return [False, result]
+		valueTolerances = self.posTolerances
+		valueNames = ["X pos", "Y pos", "Z pos"]
+		for i in range(3):
+			valueLHS = self.pos[i]
+			valueRHS = rhs.pos[i]
+			if abs(valueLHS - valueRHS) > valueTolerances[i]:
+				result += valueNames[i]
+				result += " is different"
+				result += " LHS:"
+				result += str(valueLHS)
+				result += " RHS:"
+				result += str(valueRHS)
+				result += " Delta:" + str(abs(valueLHS - valueRHS))
+				result += "\n"
+				return [False, result]
+		valueTolerances = self.orientTolerances
+		valueNames = ["X orient", "Y orient", "Z orient", "W orient"]
+		for i in range(4):
+			valueLHS = self.orient[i]
+			valueRHS = rhs.orient[i]
+			if abs(valueLHS - valueRHS) > valueTolerances[i]:
+				result += valueNames[i]
+				result += " is different"
+				result += " LHS:"
+				result += str(valueLHS)
+				result += " RHS:"
+				result += str(valueRHS)
+				result += " Delta:" + str(abs(valueLHS - valueRHS))
+				result += "\n"
+				return [False, result]
+		if self.numChildren != rhs.numChildren:
+			result += "numChildren is different"
+ 			result += " LHS:"
+			result += self.numChildren
+ 			result += " RHS:"
+			result += rhs.numChildren
+			result += "\n"
+			return [False, result]
+
+		i = 0
+		for childLHS in self.children:
+			childRHS = rhs.children[i]
+			res = childLHS.compare(childRHS)
+			i += 1
+			if res[0] == False:
+				result += "\n"
+				result += "Child[" + i + "] is different"
+				result += "\n"
+				result += "#### "
+				result += res[1]
+	 			result += "LHS:"
+				result += "\n"
+				result += childLHS.output()
+				result += "\n"
+	 			result += "RHS:"
+				result += "\n"
+				result += childRHS.output()
+				result += "\n"
+				return [False, result]
+
+		return [True, result]
 
 class NetActorItem():
 	def __init__(self):
@@ -247,6 +386,171 @@ class NetActor():
 
 		return out
 
+	def compare(self, rhs):
+		result = ""
+		if self.name != rhs.name:
+			result += "name is different"
+ 			result += " LHS:"
+			result += self.name
+ 			result += " RHS:"
+			result += rhs.name
+			result += "\n"
+			return [False, result]
+		if self.netID != rhs.netID:
+			result += "netID is different"
+ 			result += " LHS:"
+			result += self.netID
+ 			result += " RHS:"
+			result += rhs.netID
+			result += "\n"
+			return [False, result]
+		if self.armour != rhs.armour:
+			result += "armour is different"
+ 			result += " LHS:"
+			result += self.armour
+ 			result += " RHS:"
+			result += rhs.armour
+			result += "\n"
+			return [False, result]
+		if self.maxArmour != rhs.maxArmour:
+			result += "maxArmour is different"
+ 			result += " LHS:"
+			result += self.maxArmour
+ 			result += " RHS:"
+			result += rhs.maxArmour
+			result += "\n"
+			return [False, result]
+		if self.health != rhs.health:
+			result += "health is different"
+ 			result += " LHS:"
+			result += self.health
+ 			result += " RHS:"
+			result += rhs.health
+			result += "\n"
+			return [False, result]
+		if self.maxHealth != rhs.maxHealth:
+			result += "maxHealth is different"
+ 			result += " LHS:"
+			result += self.maxHealth
+ 			result += " RHS:"
+			result += rhs.maxHealth
+			result += "\n"
+			return [False, result]
+		if self.currentItem != rhs.currentItem:
+			result += "currentItem is different"
+ 			result += " LHS:"
+			result += self.currentItem
+ 			result += " RHS:"
+			result += rhs.currentItem
+			result += "\n"
+			return [False, result]
+		if self.dead != rhs.dead:
+			result += "dead is different"
+ 			result += " LHS:"
+			result += self.dead
+ 			result += " RHS:"
+			result += rhs.dead
+			result += "\n"
+			return [False, result]
+
+		if self.dead != rhs.dead:
+			result += "dead is different"
+ 			result += " LHS:"
+			result += self.dead
+ 			result += " RHS:"
+			result += rhs.dead
+			result += "\n"
+			return [False, result]
+
+		if self.numItems != rhs.numItems:
+			result += "numItems is different"
+ 			result += " LHS:"
+			result += self.numItems
+ 			result += " RHS:"
+			result += rhs.numItems
+			result += "\n"
+			return [False, result]
+		i = 0
+		for itemLHS in self.items:
+			itemRHS = rhs.items[i]
+			res = itemLHS.compare(itemRHS)
+			i += 1
+			if res[0] == False:
+				result += "\n"
+				result += "Item[" + i + "] is different"
+				result += "\n"
+				result += "#### "
+				result += res[1]
+	 			result += "LHS:"
+				result += "\n"
+				result += itemLHS.output()
+				result += "\n"
+	 			result += "RHS:"
+				result += "\n"
+				result += itemRHS.output()
+				result += "\n"
+				return [False, result]
+
+		if self.numAmmos != rhs.numAmmos:
+			result += "numAmmos is different"
+ 			result += " LHS:"
+			result += self.numAmmos
+ 			result += " RHS:"
+			result += rhs.numAmmos
+			result += "\n"
+			return [False, result]
+		i = 0
+		for ammoLHS in self.ammos:
+			ammoRHS = rhs.ammos[i]
+			res = ammoLHS.compare(ammoRHS)
+			i += 1
+			if res[0] == False:
+				result += "\n"
+				result += "Ammo[" + i + "] is different"
+				result += "\n"
+				result += "#### "
+				result += res[1]
+	 			result += "LHS:"
+				result += "\n"
+				result += ammoLHS.output()
+				result += "\n"
+	 			result += "RHS:"
+				result += "\n"
+				result += ammoRHS.output()
+				result += "\n"
+				return [False, result]
+
+		if self.numAccessories != rhs.numAccessories:
+			result += "numAccessories is different"
+ 			result += " LHS:"
+			result += self.numAccessories
+ 			result += " RHS:"
+			result += rhs.numAccessories
+			result += "\n"
+			return [False, result]
+		i = 0
+		for accessoryLHS in self.accessories:
+			accessoryRHS = rhs.accessories[i]
+			res = accessoryLHS.compare(accessoryRHS)
+			i += 1
+			if res[0] == False:
+				result += "\n"
+				result += "Accessory[" + i + "] is different"
+				result += "\n"
+				result += "#### "
+				result += res[1]
+	 			result += "LHS:"
+				result += "\n"
+				result += accessoryLHS.output()
+				result += "\n"
+	 			result += "RHS:"
+				result += "\n"
+				result += accessoryRHS.output()
+				result += "\n"
+				return [False, result]
+
+		return [True, result]
+
 class GameStateInfo():
 	def __init__(self):
 		self.nickname = ""
@@ -342,4 +646,59 @@ class GameStateInfo():
 			out += "\n"
 		out += "\n"
 		return out
+
+	def compare(self, rhs):
+		result = ""
+		if self.numNetEntities != rhs.numNetEntities:
+			result += "\n"
+			result += "NumNetEntiies is different"
+	 		result += " LHS:" + str(self.numNetEntities)
+	 		result += " RHS:" + str(rhs.numNetEntities)
+			result += "\n"
+			return [False, result]
+		if self.numNetActors != rhs.numNetActors:
+			result += "\n"
+			result += "NumNetActors is different"
+	 		result += " LHS:" + str(self.numNetActors)
+	 		result += " RHS:" + str(rhs.numNetActors)
+			result += "\n"
+			return [False, result]
+		for netEntity in self.netEntities:
+			netID = netEntity.netID
+			netEntityRHS = None
+			for netEntityOther in rhs.netEntities:
+				if netEntityOther.netID == netID:
+					netEntityRHS = netEntityOther
+					break
+			if netEntityRHS == None:
+				result += "\n"
+				result += "NetEntity not found netID:" + netID
+				result += "\n"
+				result += netEntity.output()
+				result += "\n"
+				return [False, result]
+
+			res = netEntity.compare(netEntityRHS)
+			if res[0] == False:
+				result += "\n"
+				result += "NetEntity is different"
+				result += "\n"
+				result += "#### "
+				result += res[1]
+	 			result += "LHS:"
+				result += "\n"
+				result += netEntity.output()
+				result += "\n"
+	 			result += "RHS:"
+				result += "\n"
+				result += netEntityRHS.output()
+				result += "\n"
+				return [False, result]
+#		for netActor in self.netActors:
+#			out += netActor.output()
+#			out += "\n"
+#		out += "\n"
+			
+		result = self.nickname + " MATCHES " + rhs.nickname
+		return [True, result]
 
