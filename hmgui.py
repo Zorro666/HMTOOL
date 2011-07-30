@@ -2,6 +2,7 @@
 
 import Tkinter 
 import hmclient
+import hmparse
 
 class HMGUI(Tkinter.Frame):
 	def __init__(self, master = None):
